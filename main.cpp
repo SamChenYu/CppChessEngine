@@ -13,7 +13,8 @@
 using namespace std;
 
 void unitTest() {
-    // Testing every kind of move
+
+    // Testing makeMoves()
     Board board;
 
     // Normal Move
@@ -37,6 +38,7 @@ void unitTest() {
 
     board.setupPosition("7n/8/8/8/8/8/8/7R w - - 0 1");
     move = Move(56, 0, 3, 7, 0, 0, Move::MoveType::Capture, true, true, true, true); // white rook on h1 captures black knight at h8
+    board.makeMove(move);
     if(board.pieceTypeAtSquare(0) != 3 && board.pieceTypeAtSquare(56) != -1) {
         throw std::invalid_argument("Capture Test Failed");
     }
@@ -69,7 +71,7 @@ void unitTest() {
     board.setupPosition("8/8/8/8/8/8/8/4K2R w KQkq - 0 1");
     move = Move(59, 57, 0, 0, 0, 0, Move::MoveType::CastleKingSide, true, true, true, true); // white king castles king side
     board.makeMove(move);
-    if(board.pieceTypeAtSquare(57) != 5 && board.pieceTypeAtSquare(58) != 3 && board.pieceTypeAtSquare(59) != -1 && board.pieceTypeAtSquare(56) != -1 && board.pieceTypeAtSquare(63) != -1) {
+    if(board.pieceTypeAtSquare(57) != 5 && board.pieceTypeAtSquare(58) != 3 && board.pieceTypeAtSquare(59) != -1 && board.pieceTypeAtSquare(56) != -1) {
         throw std::invalid_argument("White Castle King Side Test Failed");
     }
 
@@ -98,7 +100,96 @@ void unitTest() {
     }
 
     // Move(fromSquare, toSquare, pieceType, capturedPiece, enPassantSquare, promotedPieceType, moveType, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling)
-    std:: cout << "All Tests Passed!" << std::endl;
+    std:: cout << "All MakeMove() Tests Passed!" << std::endl;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Testing undoMove()
+
+    // Normal Move
+    board.setupPosition("8/8/8/8/8/P7/8/8 b - - 0 1");
+    move = Move(56, 48, 0, 0, 0, 0, Move::MoveType::Normal, true, true, true, true); // white pawn on a1 moves to a2
+    board.undoMove(move);
+    if (board.pieceTypeAtSquare(56) != 0 && board.pieceTypeAtSquare(48) != -1) {
+        throw std::invalid_argument("Undo Normal Move Test Failed");
+    }
+
+    // Moved Twice
+    board.setupPosition("8/8/8/8/8/P7/8/8 b - - 0 1");
+    move = Move(56, 40, 0, 0, 0, 0, Move::MoveType::MovedTwice, true, true, true, true); // white pawn on a1 moves to a3
+    board.undoMove(move);
+    if (board.pieceTypeAtSquare(56) != 0 && board.pieceTypeAtSquare(40) != -1) {
+        throw std::invalid_argument("Undo Moved Twice Test Failed");
+    }
+
+    // Capture
+    // Move(fromSquare, toSquare, pieceType, capturedPiece, enPassantSquare, promotedPieceType, moveType, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling)
+    board.setupPosition("7R/8/8/8/8/8/8/8 b - - 0 1");
+    move = Move(56, 0, 3, 7, 0, 0, Move::MoveType::Capture, true, true, true, true); // white rook on h1 captures black knight at h8
+    board.undoMove(move);
+    if(board.pieceTypeAtSquare(56) != 3 && board.pieceTypeAtSquare(0) != 7) {
+        throw std::invalid_argument("Undo Capture Test Failed");
+    }
+
+    // En Passant Capture
+    board.setupPosition("8/8/3P4/8/8/8/8/8 b - - 0 1");
+    move = Move(27, 36, 0, 6, 28, 0, Move::MoveType::EnPassantCapture, true, true, true, true); //  white pawn e5 captures black pawn on d5
+    board.undoMove(move);
+    if(board.pieceTypeAtSquare(36) != 0 && board.pieceTypeAtSquare(28) != 6 && board.pieceTypeAtSquare(27) != 0) {
+        throw std::invalid_argument("Undo En Passant Capture Test Failed");
+    }
+
+    // Promote
+    board.setupPosition("8/8/8/8/8/8/8/3q4 w - - 0 1");
+    move = Move(52, 60, 6, 0, 0, 10, Move::MoveType::Promote, true, true, true, true); // black pawn d2 promotes to black queen
+    board.undoMove(move);
+    if(board.pieceTypeAtSquare(60) != -1 && board.pieceTypeAtSquare(52) != 6) {
+        throw std::invalid_argument("Undo Promote Test Failed");
+    }
+
+    // Promote Capture
+    board.setupPosition("8/8/8/8/8/8/8/4q3 w - - 0 1");
+    move = Move(52, 59, 6, 4, 0, 10, Move::MoveType::PromoteCapture, true, true, true, true); // black pawn d2 captures white queen e1 and promotes to black queen
+    board.undoMove(move);
+    if(board.pieceTypeAtSquare(59) != 4 && board.pieceTypeAtSquare(52) != 6) {
+        throw std::invalid_argument("Undo Promote Capture Test Failed");
+    }
+
+
+    // White Castle King Side
+    board.setupPosition("8/8/8/8/8/8/8/5RK1 b KQkq - 0 1");
+    move = Move(59, 57, 0, 0, 0, 0, Move::MoveType::CastleKingSide, true, true, true, true); // white king castles king side
+    board.undoMove(move);
+    if(board.pieceTypeAtSquare(56) != 3 && board.pieceTypeAtSquare(57) != -1 && board.pieceTypeAtSquare(58) != -1 && board.pieceTypeAtSquare(59) != 5) {
+        throw std::invalid_argument("Undo White Castle King Side Test Failed");
+    }
+
+    // White Castle Queen Side
+    board.setupPosition("8/8/8/8/8/8/8/2KR4 b KQkq - 0 1");
+    move = Move(59, 61, 0, 0, 0, 0, Move::MoveType::CastleQueenSide, true, true, true, true); // white king castles queen side
+    board.undoMove(move);
+    // files for queen side castle = 59, 60, 61, 62, 63
+    if(board.pieceTypeAtSquare(59) != 5 && board.pieceTypeAtSquare(60) != -1 && board.pieceTypeAtSquare(61) != -1 && board.pieceTypeAtSquare(63) != 3) {
+        throw std::invalid_argument("Undo White Castle Queen Side Test Failed");
+    }
+
+    // Black Castle King Side
+    board.setupPosition("5rk1/8/8/8/8/8/8/8 w KQkq - 0 1");
+    move = Move(3, 1, 6, 0, 0, 0, Move::MoveType::CastleKingSide, true, true, true, true); // black king castles king side
+    board.undoMove(move);
+    if(board.pieceTypeAtSquare(0) != 9 && board.pieceTypeAtSquare(1) != -1 && board.pieceTypeAtSquare(2) != -1 && board.pieceTypeAtSquare(3) != 11) {
+        throw std::invalid_argument("Undo Black Castle King Side Test Failed");
+    }
+
+    // Black Castle Queen Side
+    board.setupPosition("2kr4/8/8/8/8/8/8/8 w KQkq - 0 1");
+    move = Move(3, 5, 6, 0, 0, 0, Move::MoveType::CastleQueenSide, true, true, true, true); // black king castles queen side
+    board.undoMove(move);
+    if(board.pieceTypeAtSquare(3) != 11 && board.pieceTypeAtSquare(4) != -1 && board.pieceTypeAtSquare(5) != -1 && board.pieceTypeAtSquare(6) != -1 && board.pieceTypeAtSquare(7) != 9) {
+        throw std::invalid_argument("Undo Black Castle Queen Side Test Failed");
+    }
+
+    std:: cout << "All UndoMove() Tests Passed!" << std::endl;
+
 }
 
 
