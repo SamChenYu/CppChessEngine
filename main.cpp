@@ -4,12 +4,17 @@
 #include <vector>
 #include <stdexcept>
 
+#include "board.h"
+
 
 // cd ~/Desktop/C++ChessEngine
-// g++ -o main main.cpp
-// ./main
+// g++ -std=c++11 -o chessengine main.cpp board.cpp
+// ./chessengine
+
+// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
 using namespace std;
+
 
 // Function to split a string by a delimiter
 vector<string> split(const string& str, char delimiter) {
@@ -24,22 +29,31 @@ vector<string> split(const string& str, char delimiter) {
 
 
 int main() {
-    cout << "Enter FEN Notation: \n";
+    cout << "Enter FEN Notation / Empty For Default Position: \n";
     string fen;
-    cin >> fen;
+    getline(cin, fen); // input from terminal
 
+    Board board;
 
-    // Parse FEN Notation
-    vector<string> board = split(fen, '/');
-
-    if(board.size() != 8) {
-        throw invalid_argument("Invalid FEN Notation");
+    if(fen.empty()) {
+        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        board.setupInitialPosition();
+        board.printSingleBitboards();     
+        board.printFENBoard();
+    } else {
+        vector<string> splitString = split(fen, '/');
+        if(splitString.size() != 8) {
+            throw invalid_argument("Invalid FEN Notation");
+        }
+        // Import into bitboards    
+        for(int i = 0; i < 8; i++) {
+            cout << splitString[i] << endl;
+        }
     }
-    
-    for(int i = 0; i < 8; i++) {
-        cout << board[i] << endl;
-    }
-    
+
 
     return 0;
 }
+
+
+
