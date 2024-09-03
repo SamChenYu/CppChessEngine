@@ -8,7 +8,7 @@
 
 
 // cd ~/Desktop/C++ChessEngine
-// g++ -std=c++11 -o chessengine main.cpp board.cpp
+// g++ -std=c++11 -o chessengine.out main.cpp board.cpp
 // ./chessengine
 
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
