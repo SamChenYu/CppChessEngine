@@ -1,4 +1,5 @@
 #include "board.h"
+#include "move.h"
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -119,6 +120,14 @@ void Board::movePiece(int pieceType, int fromSquare, int toSquare) {
     bitboards[pieceType] |= (1ULL << toSquare);    // Set the destination square
 }
 
+void Board::removePiece(int pieceType, int square) {
+    bitboards[pieceType] &= ~(1ULL << square);
+}
+
+void Board::addPiece(int pieceType, int square) {
+    bitboards[pieceType] |= (1ULL << square);
+}
+
 void Board::printFENBoard() {
     const char pieceSymbols[] = "PNBRQKpnbrqk";
 
@@ -166,3 +175,101 @@ void Board::printSingleBitboards() {
         }
     }
 }
+
+int Board::pieceTypeAtSquare(int square) {
+    for (int pieceType = 0; pieceType < 12; ++pieceType) {
+        if (bitboards[pieceType] & (1ULL << square)) {
+            return pieceType;
+        }
+    }
+    return -1;
+}
+
+void Board::makeMove(const Move& move) {
+    int fromSquare = move.getFromSquare();
+    int toSquare = move.getToSquare();
+    int pieceType = move.getPieceType();
+    Move::MoveType moveType = move.getMoveType();
+
+    switch(moveType) {
+        case Move::MoveType::Normal:
+            movePiece(pieceType, fromSquare, toSquare);
+            break;
+            
+        case Move::MoveType::MovedTwice:
+            movePiece(pieceType, fromSquare, toSquare);
+            break;
+            
+        case Move::MoveType::Capture:
+            movePiece(pieceType, fromSquare, toSquare);
+            removePiece(move.getCapturedPieceType(), toSquare);
+            break;
+            
+        case Move::MoveType::EnPassantCapture:
+            movePiece(pieceType, fromSquare, toSquare);
+            if (whiteToMove) {
+                removePiece(pieceTypeAtSquare(6), move.getEnPassantSquare()); // remove the black pawn
+            } else {
+                removePiece(pieceTypeAtSquare(0), move.getEnPassantSquare()); // remove the white pawn
+            }
+            break;
+            
+        case Move::MoveType::Promote:
+            removePiece(pieceType, fromSquare);
+            addPiece(move.getPromotedPieceType(), toSquare);
+            break;
+            
+        case Move::MoveType::PromoteCapture:
+            removePiece(pieceType, fromSquare);
+            removePiece(move.getCapturedPieceType(), toSquare);
+            addPiece(move.getPromotedPieceType(), toSquare);
+            break;
+            
+        case Move::MoveType::CastleKingSide:
+            if (whiteToMove) {
+                movePiece(5, fromSquare, toSquare); // move the white king
+                movePiece(3, 7, 5); // move the white rook
+                whiteKingSideCastling = false;
+                whiteQueenSideCastling = false;
+            } else {
+                movePiece(11, fromSquare, toSquare); // move the black king
+                movePiece(9, 63, 61); // move the black rook
+                blackKingSideCastling = false;
+                blackQueenSideCastling = false;
+            }
+            break;
+            
+        case Move::MoveType::CastleQueenSide:
+            if (whiteToMove) {
+                movePiece(5, fromSquare, toSquare); // move the white king
+                movePiece(3, 0, 3); // move the white rook
+                whiteKingSideCastling = false;
+                whiteQueenSideCastling = false;
+            } else {
+                movePiece(11, fromSquare, toSquare); // move the black king
+                movePiece(9, 56, 59); // move the black rook
+                blackKingSideCastling = false;
+                blackQueenSideCastling = false;
+            }
+            break;
+            
+        default:
+            throw std::invalid_argument("Unknown MoveType");
+
+        whiteToMove = !whiteToMove;
+        // Full move clocks etc Todo
+
+}
+
+
+    movePiece(pieceType, fromSquare, toSquare);
+}
+
+void Board::undoMove(const Move& move) {
+
+}
+
+
+
+
+

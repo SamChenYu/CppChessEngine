@@ -1,6 +1,7 @@
 # CppChessEngine
 
 
+
 Board Representation  
 a1 = bit 0  
 a2 = bit 1  
