@@ -5,12 +5,14 @@
 
 #include "board.h"
 #include "move.h"
+#include "evaluation.h"
 // cd ~/Desktop/C++ChessEngine
-// g++ -std=c++11 -o chessengine.out main.cpp board.cpp move.cpp
+// g++ -std=c++11 -o chessengine.out main.cpp board.cpp move.cpp evaluation.cpp
 // ./chessengine.out
 // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
 using namespace std;
+
 
 void unitTest() {
 
@@ -271,7 +273,6 @@ void unitTest() {
 
 }
 
-
 int main() {
     cout << "Enter FEN Notation / Empty For Default Position: \n";
     string fen;
@@ -285,19 +286,36 @@ int main() {
     } else {
         board.setupPosition(fen);
     }
+    // Move move = Move(56, 40, 3, 0, 0, 0, Move::MoveType::Normal, true, true, true, true);
+    // move.display();
+    // board.makeMove(move);
+    // board.printSingleBitboards();     
+    cout << "FEN Board: \n";
+    board.printFENBoard();
+
+    //unitTest();
+    double evaluation = evaluate(board);
+    cout << "EVALUATION: " << evaluation << endl;
 
 
-    //Move move = Move(56, 40, 3, 0, 0, 0, Move::MoveType::Normal, true, true, true, true);
-    //move.display();
-    //board.makeMove(move);
-    //board.printSingleBitboards();     
-    //cout << "FEN Board: \n";
-    //board.printFENBoard();
-
-    unitTest();
     return 0;
 }
 
+vector<Move> moveGeneration() {
+    vector<Move> moves;
+    return moves;
+}
+
+int evaluation() {
+    return 0;
+}
+
+
+void minimax() {
+
+    vector<Move> moves = moveGeneration();
+    return;
+}
 
 
 

@@ -10,6 +10,7 @@ using Bitboard = uint64_t;
 
 class Board {
 public:
+    Bitboard bitboards[12];
 
     void setupInitialPosition();
     std::vector<std::string> split(const std::string& str, char delimiter);
@@ -25,7 +26,7 @@ public:
     void undoMove(const Move& move);
 
 private:
-    Bitboard bitboards[12];
+    
     bool whiteKingSideCastling;
     bool whiteQueenSideCastling;
     bool blackKingSideCastling;
