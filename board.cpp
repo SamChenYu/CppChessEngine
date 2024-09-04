@@ -9,6 +9,8 @@
 using namespace std;
 
 void Board::setupInitialPosition() {
+
+    fill(begin(bitboards), end(bitboards), 0ULL);
     // White Pieces
     bitboards[0] = 0x00FF000000000000ULL; // White Pawns
     bitboards[1] = 0x4200000000000000ULL;// White Knights
@@ -193,61 +195,65 @@ void Board::makeMove(const Move& move) {
 
     switch(moveType) {
         case Move::MoveType::Normal:
+            //std:: cout << "Normal move executing\n";
             movePiece(pieceType, fromSquare, toSquare);
             break;
             
         case Move::MoveType::MovedTwice:
+            //std:: cout << "Moved Twice Executing\n";
             movePiece(pieceType, fromSquare, toSquare);
             break;
             
         case Move::MoveType::Capture:
-            movePiece(pieceType, fromSquare, toSquare);
+            //std:: cout << " Capture Executing\n";
             removePiece(move.getCapturedPieceType(), toSquare);
+            movePiece(pieceType, fromSquare, toSquare);
             break;
             
         case Move::MoveType::EnPassantCapture:
+            //std:: cout << "En Passant Capture Executing\n";
+            removePiece(move.getCapturedPieceType(), move.getEnPassantSquare());
             movePiece(pieceType, fromSquare, toSquare);
-            if (whiteToMove) {
-                removePiece(pieceTypeAtSquare(6), move.getEnPassantSquare()); // remove the black pawn
-            } else {
-                removePiece(pieceTypeAtSquare(0), move.getEnPassantSquare()); // remove the white pawn
-            }
             break;
             
         case Move::MoveType::Promote:
+            //std:: cout << "Promote Executing\n";
             removePiece(pieceType, fromSquare);
             addPiece(move.getPromotedPieceType(), toSquare);
             break;
             
         case Move::MoveType::PromoteCapture:
+            std:: cout << "Promote Capture Executing\n";
             removePiece(pieceType, fromSquare);
             removePiece(move.getCapturedPieceType(), toSquare);
             addPiece(move.getPromotedPieceType(), toSquare);
             break;
             
         case Move::MoveType::CastleKingSide:
-            if (whiteToMove) {
+            //std:: cout << "Castle King Side Executing\n";
+            if (pieceType == 5) { // checks whether the piece is white king
                 movePiece(5, fromSquare, toSquare); // move the white king
-                movePiece(3, 7, 5); // move the white rook
+                movePiece(3, 63, 61); // move the white rook
                 whiteKingSideCastling = false;
                 whiteQueenSideCastling = false;
             } else {
                 movePiece(11, fromSquare, toSquare); // move the black king
-                movePiece(9, 63, 61); // move the black rook
+                movePiece(9, 7, 5); // move the black rook
                 blackKingSideCastling = false;
                 blackQueenSideCastling = false;
             }
             break;
             
         case Move::MoveType::CastleQueenSide:
-            if (whiteToMove) {
+            //std:: cout << "Castle Queen Side Executing\n";
+            if (pieceType == 5) { // checks whether the piece is white king
                 movePiece(5, fromSquare, toSquare); // move the white king
-                movePiece(3, 0, 3); // move the white rook
+                movePiece(3, 56, 59); // move the white rook
                 whiteKingSideCastling = false;
                 whiteQueenSideCastling = false;
             } else {
                 movePiece(11, fromSquare, toSquare); // move the black king
-                movePiece(9, 56, 59); // move the black rook
+                movePiece(9, 0, 3); // move the black rook
                 blackKingSideCastling = false;
                 blackQueenSideCastling = false;
             }
@@ -259,19 +265,11 @@ void Board::makeMove(const Move& move) {
         whiteToMove = !whiteToMove;
         // Full move clocks etc Todo
 
-}
+    }
 
-
-    movePiece(pieceType, fromSquare, toSquare);
 }
 
 void Board::undoMove(const Move& move) {
-
-
-
-    // Todo: do all the reverse of makeMove
-
-
 
     int fromSquare = move.getFromSquare();
     int toSquare = move.getToSquare();
@@ -298,9 +296,8 @@ void Board::undoMove(const Move& move) {
             break;
             
         case Move::MoveType::Promote:
-            if(whiteToMove) {
-                removePiece(move.getPromotedPieceType(), toSquare);
-                addPiece(pieceType, fromSquare);
+            removePiece(move.getPromotedPieceType(), toSquare);
+            addPiece(pieceType, fromSquare);
             break;
             
 
@@ -311,41 +308,31 @@ void Board::undoMove(const Move& move) {
             break;
             
         case Move::MoveType::CastleKingSide:
-            if (whiteToMove) {
-                movePiece(11, toSquare, fromSquare); // whitetomove, therefore move the black king
-                movePiece(9, 61, 63); // move the black rook
-                blackKingSideCastling = true;
-                blackQueenSideCastling = move.getBlackQueenSideCastling();
+            if (pieceType == 5) { // checks whether the piece is white king
+                movePiece(5, toSquare, fromSquare); // move the white king
+                movePiece(3, 61, 63); // move the white rook
             } else {
-                movePiece(5, toSquare, fromSquare); // black to move, therefore move the white king
-                movePiece(3, 5, 7); // move the white rook
-                whiteKingSideCastling = true;
-                whiteQueenSideCastling = move.getWhiteQueenSideCastling();
+                movePiece(11, toSquare, fromSquare); // move the black king
+                movePiece(9, 5, 7); // move the black rook
             }
             break;
             
         case Move::MoveType::CastleQueenSide:
-            if (whiteToMove) {
-                movePiece(11, toSquare, fromSquare); // move the black king
-                movePiece(9, 59, 56); // move the black rook
-                blackKingSideCastling = true;
-                blackQueenSideCastling = move.getBlackQueenSideCastling();
-            } else {
+            if (pieceType == 5) { // checks whether the piece is white king
                 movePiece(5, toSquare, fromSquare); // move the white king
-                movePiece(3, 3, 0); // move the white rook
-                whiteKingSideCastling = true;
-                whiteQueenSideCastling = move.getWhiteQueenSideCastling();
+                movePiece(3, 59, 56); // move the white rook
+            } else {
+                movePiece(11, toSquare, fromSquare); // move the black king
+                movePiece(9, 3, 0); // move the black rook
             }
             break;
             
         default:
             throw std::invalid_argument("Unknown MoveType");
-        }
+    }
         whiteToMove = !whiteToMove;
         // Full move clocks etc Todo
-    }
 }
-
 
 
 
