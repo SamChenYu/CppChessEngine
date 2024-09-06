@@ -42,10 +42,15 @@ void Move::toString() const {
         "Black Pawn", "Black Knight", "Black Bishop", "Black Rook", "Black Queen", "Black King"
     };
 
-    cout << pieces[pieceType] << " moves from Square: " << bitboardIndexToCoordinate(fromSquare) << " to Square: " << bitboardIndexToCoordinate(toSquare) << " (" << moveTypeToString() << ")" << endl;
+    cout << pieces[pieceType] << " moves from Square: " << bitboardIndexToCoordinate(fromSquare) << " to Square: " << bitboardIndexToCoordinate(toSquare) << " (" << moveTypeToString() << ")";
+    if(moveType == MoveType::Capture || moveType == MoveType::PromoteCapture) {
+        cout << " and captures " << pieces[capturedPieceType];
+    }
+    if(moveType == MoveType::Promote || moveType == MoveType::PromoteCapture) {
+        cout << " and promotes to " << pieces[promotedPieceType];
+    }
 
-
-    cout << endl;
+     cout << endl;
 }
 
 
@@ -54,13 +59,13 @@ std::string Move::bitboardIndexToCoordinate(int index) const {
         throw std::out_of_range("Index must be between 0 and 63.");
     }
 
-    // Calculate file (column) and rank (row)
+    // Calculate file (column) and rank (row) based on flipped bitboard (bit 0 = a8, bit 1 = b8)
     int file = index % 8;
-    int rank = 7 - (index / 8);
+    int rank = index / 8;
 
     // Convert file and rank to chess coordinate
-    char fileChar = 'a' + file; // 'a' for file 0, 'b' for file 1, etc.
-    char rankChar = '1' + rank; // '1' for rank 0, '2' for rank 1, etc.
+    char fileChar = 'a' + file;  // 'a' for file 0, 'b' for file 1, etc.
+    char rankChar = '8' - rank;  // '8' for rank 0, '7' for rank 1, etc.
 
     // Create the coordinate string
     std::string coordinate;
@@ -69,4 +74,3 @@ std::string Move::bitboardIndexToCoordinate(int index) const {
 
     return coordinate;
 }
-

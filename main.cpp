@@ -13,6 +13,11 @@
 
 using namespace std;
 
+int nodesSearched = 0;
+int maxDepth = 4;
+int bestMoveIndex = -1;
+int secondBestMoveIndex = -1;
+int thirdBestMoveIndex = -1;
 
 void unitTest() {
 
@@ -271,50 +276,213 @@ void unitTest() {
 
     std:: cout << "All UndoMove() Tests Passed!" << std::endl;
 
+
+    // Testing kingChecks()
+
+    std:: cout << " ----------------------------------------------------------------------" << std:: endl;
+
+    board.setupPosition("8/8/8/8/8/1p6/2K5/8 w - - 0 1");
+    std:: cout<< "White King in Check from Black Pawn: \n";
+    board.printFENBoard();
+    if(!board.isKingInCheck()) {
+        throw std::invalid_argument("White King in Check from Black Pawn Test Failed");
+    }
+
+    board.setupPosition("8/8/8/8/3n4/8/2K5/8 b - - 0 1");
+    std:: cout<< "White King in Check from Black Knight: \n";
+    board.printFENBoard();
+    if(!board.isKingInCheck()) {
+        throw std::invalid_argument("White King in Check from Black Knight Test Failed");
+    }
+
+    board.setupPosition("8/8/8/6b1/8/8/3K4/8 b - - 0 1");
+    std:: cout<< "White King in Check from Black Bishop: \n";
+    board.printFENBoard();
+    if(!board.isKingInCheck()) {
+        throw std::invalid_argument("White King in Check from Black Bishop Test Failed");
+    }
+
+    board.setupPosition("8/8/8/6b1/5n2/8/3K4/8 b - - 0 1");
+    std:: cout<< "White King not in check by blocked bishop: \n";
+    board.printFENBoard();
+    if(board.isKingInCheck()) {
+        throw std::invalid_argument("White King not in check by blocked bishop Test Failed");
+    }
+
+    board.setupPosition("8/8/8/3r4/8/8/3K4/8 w - - 0 1");
+    std:: cout<< "White King in Check from Black Rook: \n";
+    board.printFENBoard();
+    if(!board.isKingInCheck()) {
+        throw std::invalid_argument("White King in Check from Black Rook Test Failed");
+    }
+
+    board.setupPosition("8/8/8/3r4/8/3R4/3K4/8 w - - 0 1");
+    std:: cout<< "White King not in check by blocked rook: \n";
+    board.printFENBoard();
+    if(board.isKingInCheck()) {
+        throw std::invalid_argument("White King not in check by blocked rook Test Failed");
+    }
+
+    board.setupPosition("8/8/8/3q4/8/8/3K4/8 w - - 0 1");
+    std:: cout<< "White King in Check from Black Queen: \n";
+    board.printFENBoard();
+    if(!board.isKingInCheck()) {
+        throw std::invalid_argument("White King in Check from Black Queen Test Failed");
+    }
+
+    board.setupPosition("8/8/8/3q4/8/3P4/3K4/8 w - - 0 1");
+    std:: cout<< "White King not in check by blocked queen: \n";
+    board.printFENBoard();
+    if(board.isKingInCheck()) {
+        throw std::invalid_argument("White King not in check by blocked queen Test Failed");
+    }
+    
+    std:: cout << "All isKingInCheck() Tests Passed!" << std::endl;
+
+}
+
+double minimax(Board& board, int depth, double alpha, double beta, bool isMaximising) {
+    nodesSearched++;
+
+    if(depth == maxDepth) {
+        return evaluate(board);
+    }
+
+    vector<Move> moves = board.moveGeneration();
+
+    // checking if a leaf is a terminal node
+    if(moves.empty()) {
+        int terminate = board.isGameOver();
+        if(terminate != 2) {
+            if(terminate == -1 || terminate == 0 || terminate == 1) { // need to refactor -> this checks checkmate / stalemate 
+                return terminate;
+            }
+        }
+    }
+
+    // minimax
+    if (isMaximising) {
+        double bestValue = -std::numeric_limits<double>::infinity();
+        double secondBestValue = -std::numeric_limits<double>::infinity() + 1.0;
+        double thirdBestValue = -std::numeric_limits<double>::infinity() + 2.0;
+
+        for (int i = 0; i < moves.size(); ++i) {
+            Move a = moves[i];
+            board.makeMove(moves[i]);
+            board.flipColour();
+            double tempValue = minimax(board, depth + 1, alpha, beta, false);
+            board.flipColour();
+            board.undoMove(moves[i]);
+
+            if (tempValue >= bestValue) {
+                thirdBestValue = secondBestValue;
+                secondBestValue = bestValue;
+                bestValue = tempValue;
+
+                if (depth == 0) {
+                    thirdBestMoveIndex = secondBestMoveIndex;
+                    secondBestMoveIndex = bestMoveIndex;
+                    bestMoveIndex = i;
+                }
+            } else if (tempValue >= secondBestValue) {
+                thirdBestValue = secondBestValue;
+                secondBestValue = tempValue;
+
+                if (depth == 0) {
+                    thirdBestMoveIndex = secondBestMoveIndex;
+                    secondBestMoveIndex = i;
+                }
+            } else if (tempValue >= thirdBestValue) {
+                thirdBestValue = tempValue;
+
+                if (depth == 0) {
+                    thirdBestMoveIndex = i;
+                }
+            }
+
+            alpha = std::max(alpha, bestValue);
+
+            // Pruning
+            if (beta <= alpha) {
+                break;
+            }
+        }
+        return bestValue;
+    } else {
+        double leastValue = std::numeric_limits<double>::infinity();
+        double secondLeastValue = std::numeric_limits<double>::infinity() + 1.0;
+        double thirdLeastValue = std::numeric_limits<double>::infinity() + 2.0;
+
+        for (int i = 0; i < moves.size(); ++i) {
+            Move a = moves[i];
+            board.makeMove(moves[i]);
+            board.flipColour();
+            double tempValue = minimax(board, depth + 1, alpha, beta, true);
+            board.flipColour();
+            board.undoMove(moves[i]);
+
+            if (tempValue <= leastValue) {
+                thirdLeastValue = secondLeastValue;
+                secondLeastValue = leastValue;
+                leastValue = tempValue;
+
+                if (depth == 0) {
+                    thirdBestMoveIndex = secondBestMoveIndex;
+                    secondBestMoveIndex = bestMoveIndex;
+                    bestMoveIndex = i;
+                }
+            } else if (tempValue <= secondLeastValue) {
+                thirdLeastValue = secondLeastValue;
+                secondLeastValue = tempValue;
+
+                if (depth == 0) {
+                    thirdBestMoveIndex = secondBestMoveIndex;
+                    secondBestMoveIndex = i;
+                }
+            } else if (tempValue <= thirdLeastValue) {
+                thirdLeastValue = tempValue;
+
+                if (depth == 0) {
+                    thirdBestMoveIndex = i;
+                }
+            }
+
+            beta = std::min(beta, leastValue);
+
+            // Pruning
+            if (beta <= alpha) {
+                break;
+            }
+        }
+        return leastValue;
+    }
 }
 
 int main() {
     cout << "Enter FEN Notation / Empty For Default Position: \n";
     string fen;
     getline(cin, fen); // input from terminal
-
     Board board;
-
     if(fen.empty()) {
         fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        board.setupInitialPosition();
+        board.setupPosition(fen);
     } else {
         board.setupPosition(fen);
     }
-    // Move move = Move(56, 40, 3, 0, 0, 0, Move::MoveType::Normal, true, true, true, true);
-    // move.display();
-    // board.makeMove(move);
-    // board.printSingleBitboards();     
     cout << "FEN Board: \n";
     board.printFENBoard();
-
+    double eval = evaluate(board);
+    cout << "Evaluation: " << eval << endl;
+    cout << "isKingInCheck: " << board.isKingInCheck() << endl;
     //unitTest();
-    double evaluation = evaluate(board);
-    cout << "EVALUATION: " << evaluation << endl;
-
-
+    // 3q4/8/8/2b1np2/1r6/8/3K4/8 b - - 0 1
+    vector<Move> moves = board.moveGeneration();
+    cout << "Number of Moves: " << moves.size() << endl;
+    for (int i = 0; i < moves.size(); ++i) {
+        moves[i].toString();
+        //moves[i].display();
+    }
     return 0;
-}
-
-vector<Move> moveGeneration() {
-    vector<Move> moves;
-    return moves;
-}
-
-int evaluation() {
-    return 0;
-}
-
-
-void minimax() {
-
-    vector<Move> moves = moveGeneration();
-    return;
 }
 
 
