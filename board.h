@@ -32,7 +32,7 @@ public:
     void printFENBoard();
     void printSingleBitboards();
     void printBitboard(uint64_t bb) const;
-
+    int coordinateToBitboardIndex(const std::string& coordinate) const;
     int pieceTypeAtSquare(int square);
     void makeMove(const Move& move);
     void undoMove(const Move& move);

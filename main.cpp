@@ -66,7 +66,7 @@ void unitTest() {
     board.setupPosition("8/8/8/3pP3/8/8/8/8 w - d6 0 1");
     std::cout << "Before En Passant Capture: \n";
     board.printFENBoard();
-    move = Move(28, 19, 0, 6, 27, 0, Move::MoveType::EnPassantCapture, true, true, true, true); //  white pawn e5 captures black pawn on d5
+    move = Move(28, 19, 0, 6, 19, 0, Move::MoveType::EnPassantCapture, true, true, true, true); //  white pawn e5 captures black pawn on d5
     board.makeMove(move);
     std::cout << "After En Passant Capture: \n";
     board.printFENBoard();
@@ -193,7 +193,7 @@ void unitTest() {
     board.setupPosition("8/8/3P4/8/8/8/8/8 b - - 0 1");
     std:: cout<< "Before En Passant Capture: \n";
     board.printFENBoard();
-    move = Move(28, 19, 0, 6, 27, 0, Move::MoveType::EnPassantCapture, true, true, true, true); //  white pawn e5 captures black pawn on d5
+    move = Move(28, 19, 0, 6, 19, 0, Move::MoveType::EnPassantCapture, true, true, true, true); //  white pawn e5 captures black pawn on d5
     board.undoMove(move);
     std:: cout<< "After En Passant Capture: \n";
     board.printFENBoard();
@@ -281,7 +281,7 @@ void unitTest() {
 
     std:: cout << " ----------------------------------------------------------------------" << std:: endl;
 
-    board.setupPosition("8/8/8/8/8/1p6/2K5/8 w - - 0 1");
+    board.setupPosition("8/8/8/8/8/1p6/2K5/8 b - - 0 1");
     std:: cout<< "White King in Check from Black Pawn: \n";
     board.printFENBoard();
     if(!board.isKingInCheck()) {
@@ -309,28 +309,28 @@ void unitTest() {
         throw std::invalid_argument("White King not in check by blocked bishop Test Failed");
     }
 
-    board.setupPosition("8/8/8/3r4/8/8/3K4/8 w - - 0 1");
+    board.setupPosition("8/8/8/3r4/8/8/3K4/8 b - - 0 1");
     std:: cout<< "White King in Check from Black Rook: \n";
     board.printFENBoard();
     if(!board.isKingInCheck()) {
         throw std::invalid_argument("White King in Check from Black Rook Test Failed");
     }
 
-    board.setupPosition("8/8/8/3r4/8/3R4/3K4/8 w - - 0 1");
+    board.setupPosition("8/8/8/3r4/8/3R4/3K4/8 b - - 0 1");
     std:: cout<< "White King not in check by blocked rook: \n";
     board.printFENBoard();
     if(board.isKingInCheck()) {
         throw std::invalid_argument("White King not in check by blocked rook Test Failed");
     }
 
-    board.setupPosition("8/8/8/3q4/8/8/3K4/8 w - - 0 1");
+    board.setupPosition("8/8/8/3q4/8/8/3K4/8 b - - 0 1");
     std:: cout<< "White King in Check from Black Queen: \n";
     board.printFENBoard();
     if(!board.isKingInCheck()) {
         throw std::invalid_argument("White King in Check from Black Queen Test Failed");
     }
 
-    board.setupPosition("8/8/8/3q4/8/3P4/3K4/8 w - - 0 1");
+    board.setupPosition("8/8/8/3q4/8/3P4/3K4/8 b - - 0 1");
     std:: cout<< "White King not in check by blocked queen: \n";
     board.printFENBoard();
     if(board.isKingInCheck()) {
@@ -482,6 +482,8 @@ int main() {
         moves[i].toString();
         //moves[i].display();
     }
+
+    //unitTest();
     return 0;
 }
 
