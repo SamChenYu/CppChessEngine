@@ -14,7 +14,7 @@
 using namespace std;
 
 int nodesSearched = 0;
-int maxDepth = 4;
+int maxDepth = 10;
 int bestMoveIndex = -1;
 int secondBestMoveIndex = -1;
 int thirdBestMoveIndex = -1;
@@ -348,7 +348,7 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
         return evaluate(board);
     }
 
-    vector<Move> moves = board.moveGeneration();
+    vector<Move> moves = board.legalMoveGeneration();
 
     // checking if a leaf is a terminal node
     if(moves.empty()) {
@@ -366,13 +366,24 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
         double secondBestValue = -std::numeric_limits<double>::infinity() + 1.0;
         double thirdBestValue = -std::numeric_limits<double>::infinity() + 2.0;
 
-        for (int i = 0; i < moves.size(); ++i) {
+        for (int i = 0; i < moves.size(); i++) {
             Move a = moves[i];
+            cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+            board.printJustFENBoard();
+            cout << "making for ";
+            moves[i].display();
             board.makeMove(moves[i]);
+            board.printJustFENBoard();
             board.flipColour();
             double tempValue = minimax(board, depth + 1, alpha, beta, false);
             board.flipColour();
+            cout << "----------------------------------------" << endl;
+            board.printJustFENBoard();
+            cout << "undoing for ";
+            moves[i].display();
             board.undoMove(moves[i]);
+            board.printJustFENBoard();
+            cout << "----------------------------------------" << endl;
 
             if (tempValue >= bestValue) {
                 thirdBestValue = secondBestValue;
@@ -411,15 +422,26 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
     } else {
         double leastValue = std::numeric_limits<double>::infinity();
         double secondLeastValue = std::numeric_limits<double>::infinity() + 1.0;
-        double thirdLeastValue = std::numeric_limits<double>::infinity() + 2.0;
+        double thirdLeastValue = std::numeric_limits<double>::infinity();
 
-        for (int i = 0; i < moves.size(); ++i) {
+        for (int i = 0; i < moves.size(); i++) {
             Move a = moves[i];
+            cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+            board.printJustFENBoard();
+            cout << "making for ";
+            moves[i].display();
             board.makeMove(moves[i]);
+            board.printJustFENBoard();
             board.flipColour();
-            double tempValue = minimax(board, depth + 1, alpha, beta, true);
+            double tempValue = minimax(board, depth + 1, alpha, beta, false);
             board.flipColour();
+            cout << "----------------------------------------" << endl;
+            board.printJustFENBoard();
+            cout << "undoing for ";
+            moves[i].display();
             board.undoMove(moves[i]);
+            board.printJustFENBoard();
+            cout << "----------------------------------------" << endl;
 
             if (tempValue <= leastValue) {
                 thirdLeastValue = secondLeastValue;
@@ -472,18 +494,25 @@ int main() {
     cout << "FEN Board: \n";
     board.printFENBoard();
     double eval = evaluate(board);
-    cout << "Evaluation: " << eval << endl;
-    cout << "isKingInCheck: " << board.isKingInCheck() << endl;
+    //cout << "Evaluation: " << eval << endl;
+    //cout << "isKingInCheck: " << board.isKingInCheck() << endl;
     //unitTest();
     // 3q4/8/8/2b1np2/1r6/8/3K4/8 b - - 0 1
-    vector<Move> moves = board.moveGeneration();
+    vector<Move> moves = board.legalMoveGeneration();
     cout << "Number of Moves: " << moves.size() << endl;
-    for (int i = 0; i < moves.size(); ++i) {
+    for (int i = 0; i < moves.size(); i++) {
         moves[i].toString();
         //moves[i].display();
     }
 
+    //minimax(board, 0, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), true);
+    //board.printFENBoard();
+    //cout << "Nodes Searched: " << nodesSearched << endl;
+    //cout << "Best Move: " << bestMoveIndex << endl;
+    //moves[bestMoveIndex].toString();
     //unitTest();
+
+    
     return 0;
 }
 

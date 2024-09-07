@@ -32,6 +32,7 @@ public:
     void printFENBoard();
     void printSingleBitboards();
     void printBitboard(uint64_t bb) const;
+    void printJustFENBoard();
     int coordinateToBitboardIndex(const std::string& coordinate) const;
     int pieceTypeAtSquare(int square);
     void makeMove(const Move& move);
@@ -39,7 +40,8 @@ public:
     void flipColour();
 
     bool isKingInCheck();
-    std::vector<Move> moveGeneration();
+    std::vector<Move> legalMoveGeneration();
+    std::vector<Move> pseudoLegalMoves();
     int isGameOver();
 
     uint64_t generateKnightAttacks(int square) const;
