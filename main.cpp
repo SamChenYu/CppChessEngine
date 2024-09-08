@@ -6,6 +6,8 @@
 #include "board.h"
 #include "move.h"
 #include "evaluation.h"
+
+#include <chrono>
 // cd ~/Desktop/C++ChessEngine
 // g++ -std=c++11 -o chessengine.out main.cpp board.cpp move.cpp evaluation.cpp
 // ./chessengine.out
@@ -14,7 +16,7 @@
 using namespace std;
 
 int nodesSearched = 0;
-int maxDepth = 10;
+int maxDepth = 3;
 int bestMoveIndex = -1;
 int secondBestMoveIndex = -1;
 int thirdBestMoveIndex = -1;
@@ -368,22 +370,22 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
 
         for (int i = 0; i < moves.size(); i++) {
             Move a = moves[i];
-            cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
-            board.printJustFENBoard();
-            cout << "making for ";
-            moves[i].display();
-            board.makeMove(moves[i]);
-            board.printJustFENBoard();
+            //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+            //board.printJustFENBoard();
+            //cout << "making for ";
+            //moves[i].display();
+            //board.makeMove(moves[i]);
+            //board.printJustFENBoard();
             board.flipColour();
             double tempValue = minimax(board, depth + 1, alpha, beta, false);
             board.flipColour();
-            cout << "----------------------------------------" << endl;
-            board.printJustFENBoard();
-            cout << "undoing for ";
-            moves[i].display();
+            //cout << "----------------------------------------" << endl;
+            //board.printJustFENBoard();
+            //cout << "undoing for ";
+            //moves[i].display();
             board.undoMove(moves[i]);
-            board.printJustFENBoard();
-            cout << "----------------------------------------" << endl;
+            //board.printJustFENBoard();
+            //cout << "----------------------------------------" << endl;
 
             if (tempValue >= bestValue) {
                 thirdBestValue = secondBestValue;
@@ -426,22 +428,22 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
 
         for (int i = 0; i < moves.size(); i++) {
             Move a = moves[i];
-            cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
-            board.printJustFENBoard();
-            cout << "making for ";
-            moves[i].display();
-            board.makeMove(moves[i]);
-            board.printJustFENBoard();
+            // cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
+            // board.printJustFENBoard();
+            // cout << "making for ";
+            //moves[i].display();
+            // board.makeMove(moves[i]);
+            // board.printJustFENBoard();
             board.flipColour();
             double tempValue = minimax(board, depth + 1, alpha, beta, false);
             board.flipColour();
-            cout << "----------------------------------------" << endl;
-            board.printJustFENBoard();
-            cout << "undoing for ";
-            moves[i].display();
+            // cout << "----------------------------------------" << endl;
+            // board.printJustFENBoard();
+            // cout << "undoing for ";
+            //moves[i].display();
             board.undoMove(moves[i]);
-            board.printJustFENBoard();
-            cout << "----------------------------------------" << endl;
+            //board.printJustFENBoard();
+            //cout << "----------------------------------------" << endl;
 
             if (tempValue <= leastValue) {
                 thirdLeastValue = secondLeastValue;
@@ -484,6 +486,8 @@ int main() {
     cout << "Enter FEN Notation / Empty For Default Position: \n";
     string fen;
     getline(cin, fen); // input from terminal
+    cout << "Enter Max Depth: \n";
+    cin >> maxDepth;
     Board board;
     if(fen.empty()) {
         fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -499,17 +503,19 @@ int main() {
     //unitTest();
     // 3q4/8/8/2b1np2/1r6/8/3K4/8 b - - 0 1
     vector<Move> moves = board.legalMoveGeneration();
-    cout << "Number of Moves: " << moves.size() << endl;
+    //cout << "Number of Moves: " << moves.size() << endl;
     for (int i = 0; i < moves.size(); i++) {
         moves[i].toString();
         //moves[i].display();
-    }
-
-    //minimax(board, 0, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), true);
-    //board.printFENBoard();
-    //cout << "Nodes Searched: " << nodesSearched << endl;
-    //cout << "Best Move: " << bestMoveIndex << endl;
-    //moves[bestMoveIndex].toString();
+    }  
+    auto start = std::chrono::high_resolution_clock::now();
+    minimax(board, 0, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), true);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    board.printFENBoard();
+    cout << "Nodes Searched: " << nodesSearched << " in " << duration.count() << endl;
+    cout << "Best Move: " << bestMoveIndex << endl;
+    moves[bestMoveIndex].toString();
     //unitTest();
 
     
