@@ -21,6 +21,29 @@ public:
     const uint64_t FILE_G = 0x0202020202020202ULL;  // File G (7th column, flipped)
     const uint64_t FILE_H = 0x0101010101010101ULL;  // File H (8th column, flipped)
 
+    const uint64_t RANK_1 = 0x00000000000000FFULL;  // Rank 1 (Bottom row, 1st rank)
+    const uint64_t RANK_2 = 0x000000000000FF00ULL;  // Rank 2
+    const uint64_t RANK_3 = 0x0000000000FF0000ULL;  // Rank 3
+    const uint64_t RANK_4 = 0x00000000FF000000ULL;  // Rank 4
+    const uint64_t RANK_5 = 0x000000FF00000000ULL;  // Rank 5
+    const uint64_t RANK_6 = 0x0000FF0000000000ULL;  // Rank 6
+    const uint64_t RANK_7 = 0x00FF000000000000ULL;  // Rank 7
+    const uint64_t RANK_8 = 0xFF00000000000000ULL;  // Rank 8 (Top row, 8th rank)
+
+
+    /*
+        Precomputed Attack Bitboards    
+    */
+   void precomputeAttackBitboards();
+   uint64_t knightAttacks[64];
+   uint64_t getKnightAttacks(int square);
+   uint64_t bishopAttacks[64];
+   uint64_t getBishopAttacks(int square);
+   uint64_t rookAttacks[64];
+   uint64_t getRookAttacks(int square);
+
+
+
 
 
     void setupInitialPosition();
@@ -48,6 +71,12 @@ public:
     uint64_t generateBishopAttacks(int square, uint64_t blockers) const;
     uint64_t generateRookAttacks(int square, uint64_t blockers) const;
     uint64_t generateKingAttacks(int square) const;
+
+
+    uint64_t kingDangerSquares() const;
+    bool isWhiteToMove() const {
+        return whiteToMove;
+    }
 
 private:
     

@@ -9,6 +9,15 @@
 
 using namespace std;
 
+
+void Board::precomputeAttackBitboards() {
+    for (int square = 0; square < 64; ++square) {
+        knightAttacks[square] = generateKnightAttacks(square);
+        //bishopAttacks[square] = generateBishopAttacks(square, 0);
+        //rookAttacks[square] = generateRookAttacks(square, 0);
+    }
+}
+
 void Board::setupInitialPosition() {
 
     fill(begin(bitboards), end(bitboards), 0ULL);
@@ -463,9 +472,16 @@ bool Board::isKingInCheck() {
     // std::cout << "Enemy King:" << std::endl;
     // printBitboard(enemyKing);
 
+        //uint64_t currentPawnCaptureMoves = isWhiteTurn ? 
+        //    (((1ULL << (fromSquare - 9)) & opponentPieces & ~FILE_A) | ((1ULL << (fromSquare - 7)) & opponentPieces & ~FILE_H)) :
+        //    (((1ULL << (fromSquare + 9)) & opponentPieces & ~FILE_H) | ((1ULL << (fromSquare + 7)) & opponentPieces & ~FILE_A));
+
+
+
+
     // Check for pawn attacks on the king
-    uint64_t pawnAttacks = whiteToMove ? ((enemyPawns >> 9) & ~FILE_H) | ((enemyPawns >> 7)  & ~FILE_A)
-                                            : ((enemyPawns << 9) & ~FILE_H) | ((enemyPawns << 7)  & ~FILE_A);
+    uint64_t pawnAttacks = whiteToMove ? (((enemyPawns << 9) & ~FILE_A) | ((enemyPawns << 7) & ~FILE_H))
+                                    : (((enemyPawns >> 9) & ~FILE_A) | ((enemyPawns >> 7) & ~FILE_H));
     if (pawnAttacks & (1ULL << kingSquare)) {
         //std::cout << "King is in check by pawn attack" << std::endl;
         return true;
@@ -500,14 +516,17 @@ bool Board::isKingInCheck() {
     return false;  // No attack found on the king
 }
 
+
+
+// Precomputing Tables
 uint64_t Board::generateKnightAttacks(int square) const {
     uint64_t knight = (1ULL << square);  // Start with the knight's current position
 
     // Masks to prevent knight moves from overflowing to the other side
-    const uint64_t notAFile = 0xFEFEFEFEFEFEFEFEULL;  // Mask for not A-file (file 1)
-    const uint64_t notABFile = 0xFCFCFCFCFCFCFCFCULL; // Mask for not A-file and B-file
-    const uint64_t notHFile = 0x7F7F7F7F7F7F7F7FULL;  // Mask for not H-file (file 8)
-    const uint64_t notGHFile = 0x3F3F3F3F3F3F3F3FULL; // Mask for not G-file and H-file
+    static const uint64_t notAFile = 0xFEFEFEFEFEFEFEFEULL;  // Mask for not A-file (file 1)
+    static const uint64_t notABFile = 0xFCFCFCFCFCFCFCFCULL; // Mask for not A-file and B-file
+    static const uint64_t notHFile = 0x7F7F7F7F7F7F7F7FULL;  // Mask for not H-file (file 8)
+    static const uint64_t notGHFile = 0x3F3F3F3F3F3F3F3FULL; // Mask for not G-file and H-file
 
     // Generate knight moves by shifting the bitboard
     uint64_t attacks = 0;
@@ -530,7 +549,6 @@ uint64_t Board::generateKnightAttacks(int square) const {
 
     return attacks;
 }
-
 
 uint64_t Board::generateBishopAttacks(int square, uint64_t blockers) const {
     uint64_t attacks = 0;
@@ -562,7 +580,6 @@ uint64_t Board::generateBishopAttacks(int square, uint64_t blockers) const {
     return attacks;
 }
 
-
 uint64_t Board::generateRookAttacks(int square, uint64_t blockers) const {
     uint64_t attacks = 0;
 
@@ -593,6 +610,18 @@ uint64_t Board::generateRookAttacks(int square, uint64_t blockers) const {
     return attacks;
 }
 
+uint64_t Board::getKnightAttacks(int square) {
+    return knightAttacks[square];
+}
+
+uint64_t getBishopAttacks(int square, uint64_t blockers) {
+    return 0;
+}
+
+
+uint64_t getRookAttacks(int square, uint64_t blockers) {
+    return 0;
+}
 
 uint64_t Board::generateKingAttacks(int square) const {
     uint64_t attacks = 0;
@@ -613,7 +642,38 @@ uint64_t Board::generateKingAttacks(int square) const {
 }
 
 
+
 std::vector<Move> Board::legalMoveGeneration() {
+
+    // check the opponent attacking squares to see if we are in check
+    uint64_t attackers = 0;
+    uint64_t enemyPawns, enemyKnights, enemyBishopsQueens, enemyRooksQueens, enemyKing;
+
+    // Find the king's square and set up the enemy pieces' bitboards
+    if (!whiteToMove) {
+        enemyPawns = bitboards[0];                   // White pawns
+        enemyKnights = bitboards[1];                 // White knights
+        enemyBishopsQueens = bitboards[2] | bitboards[4];   // White bishops and queens
+        enemyRooksQueens = bitboards[3] | bitboards[4];     // White rooks and queens
+        enemyKing = bitboards[5];                    // White king
+    } else {
+        enemyPawns = bitboards[6];                   // Black pawns
+        enemyKnights = bitboards[7];                 // Black knights
+        enemyBishopsQueens = bitboards[8] | bitboards[10];  // Black bishops and queens
+        enemyRooksQueens = bitboards[9] | bitboards[10];    // Black rooks and queens
+        enemyKing = bitboards[11];                   // Black king
+    }
+
+    // Calculate the blocker bitboard (all pieces)
+    uint64_t blockers = 0;
+    for (int i = 0; i < 12; ++i) {
+        blockers |= bitboards[i];
+    }
+    
+    
+
+
+
     vector<Move> legalMoves = pseudoLegalMoves();
     for(int i=legalMoves.size() - 1; i>=0; i--) {
         makeMove(legalMoves[i]);
@@ -623,6 +683,11 @@ std::vector<Move> Board::legalMoveGeneration() {
         undoMove(legalMoves[i]);
     }
     return legalMoves;
+}
+
+uint64_t Board::kingDangerSquares() const{
+    uint64_t kingDangerSquares = 0;
+    return 0;
 }
 
 std::vector<Move> Board::pseudoLegalMoves() {
@@ -898,4 +963,3 @@ std::vector<Move> Board::pseudoLegalMoves() {
 
     return moves;
 }
-

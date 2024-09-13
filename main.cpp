@@ -16,7 +16,7 @@
 using namespace std;
 
 int nodesSearched = 0;
-int maxDepth = 3;
+int maxDepth = 1;
 int bestMoveIndex = -1;
 int secondBestMoveIndex = -1;
 int thirdBestMoveIndex = -1;
@@ -283,56 +283,56 @@ void unitTest() {
 
     std:: cout << " ----------------------------------------------------------------------" << std:: endl;
 
-    board.setupPosition("8/8/8/8/8/1p6/2K5/8 b - - 0 1");
+    board.setupPosition("8/8/8/8/8/1p6/2K5/8 w - - 0 1");
     std:: cout<< "White King in Check from Black Pawn: \n";
     board.printFENBoard();
     if(!board.isKingInCheck()) {
         throw std::invalid_argument("White King in Check from Black Pawn Test Failed");
     }
 
-    board.setupPosition("8/8/8/8/3n4/8/2K5/8 b - - 0 1");
+    board.setupPosition("8/8/8/8/3n4/8/2K5/8 w - - 0 1");
     std:: cout<< "White King in Check from Black Knight: \n";
     board.printFENBoard();
     if(!board.isKingInCheck()) {
         throw std::invalid_argument("White King in Check from Black Knight Test Failed");
     }
 
-    board.setupPosition("8/8/8/6b1/8/8/3K4/8 b - - 0 1");
+    board.setupPosition("8/8/8/6b1/8/8/3K4/8 w - - 0 1");
     std:: cout<< "White King in Check from Black Bishop: \n";
     board.printFENBoard();
     if(!board.isKingInCheck()) {
         throw std::invalid_argument("White King in Check from Black Bishop Test Failed");
     }
 
-    board.setupPosition("8/8/8/6b1/5n2/8/3K4/8 b - - 0 1");
+    board.setupPosition("8/8/8/6b1/5n2/8/3K4/8 w - - 0 1");
     std:: cout<< "White King not in check by blocked bishop: \n";
     board.printFENBoard();
     if(board.isKingInCheck()) {
         throw std::invalid_argument("White King not in check by blocked bishop Test Failed");
     }
 
-    board.setupPosition("8/8/8/3r4/8/8/3K4/8 b - - 0 1");
+    board.setupPosition("8/8/8/3r4/8/8/3K4/8 w - - 0 1");
     std:: cout<< "White King in Check from Black Rook: \n";
     board.printFENBoard();
     if(!board.isKingInCheck()) {
         throw std::invalid_argument("White King in Check from Black Rook Test Failed");
     }
 
-    board.setupPosition("8/8/8/3r4/8/3R4/3K4/8 b - - 0 1");
+    board.setupPosition("8/8/8/3r4/8/3R4/3K4/8 w - - 0 1");
     std:: cout<< "White King not in check by blocked rook: \n";
     board.printFENBoard();
     if(board.isKingInCheck()) {
         throw std::invalid_argument("White King not in check by blocked rook Test Failed");
     }
 
-    board.setupPosition("8/8/8/3q4/8/8/3K4/8 b - - 0 1");
+    board.setupPosition("8/8/8/3q4/8/8/3K4/8 w - - 0 1");
     std:: cout<< "White King in Check from Black Queen: \n";
     board.printFENBoard();
     if(!board.isKingInCheck()) {
         throw std::invalid_argument("White King in Check from Black Queen Test Failed");
     }
 
-    board.setupPosition("8/8/8/3q4/8/3P4/3K4/8 b - - 0 1");
+    board.setupPosition("8/8/8/3q4/8/3P4/3K4/8 w - - 0 1");
     std:: cout<< "White King not in check by blocked queen: \n";
     board.printFENBoard();
     if(board.isKingInCheck()) {
@@ -345,7 +345,6 @@ void unitTest() {
 
 double minimax(Board& board, int depth, double alpha, double beta, bool isMaximising) {
     nodesSearched++;
-
     if(depth == maxDepth) {
         return evaluate(board);
     }
@@ -353,7 +352,7 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
     vector<Move> moves = board.legalMoveGeneration();
 
     // checking if a leaf is a terminal node
-    if(moves.empty()) {
+    if(moves.empty()) { 
         int terminate = board.isGameOver();
         if(terminate != 2) {
             if(terminate == -1 || terminate == 0 || terminate == 1) { // need to refactor -> this checks checkmate / stalemate 
@@ -370,22 +369,12 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
 
         for (int i = 0; i < moves.size(); i++) {
             Move a = moves[i];
-            //cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
-            //board.printJustFENBoard();
-            //cout << "making for ";
-            //moves[i].display();
-            //board.makeMove(moves[i]);
-            //board.printJustFENBoard();
+            board.makeMove(moves[i]);
             board.flipColour();
-            double tempValue = minimax(board, depth + 1, alpha, beta, false);
-            board.flipColour();
-            //cout << "----------------------------------------" << endl;
-            //board.printJustFENBoard();
-            //cout << "undoing for ";
-            //moves[i].display();
+            double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising);
             board.undoMove(moves[i]);
-            //board.printJustFENBoard();
-            //cout << "----------------------------------------" << endl;
+            board.flipColour();
+
 
             if (tempValue >= bestValue) {
                 thirdBestValue = secondBestValue;
@@ -423,27 +412,15 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
         return bestValue;
     } else {
         double leastValue = std::numeric_limits<double>::infinity();
-        double secondLeastValue = std::numeric_limits<double>::infinity() + 1.0;
-        double thirdLeastValue = std::numeric_limits<double>::infinity();
+        double secondLeastValue = std::numeric_limits<double>::infinity() - 1.0;
+        double thirdLeastValue = std::numeric_limits<double>::infinity() - 2.0;
 
         for (int i = 0; i < moves.size(); i++) {
-            Move a = moves[i];
-            // cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@" << endl;
-            // board.printJustFENBoard();
-            // cout << "making for ";
-            //moves[i].display();
-            // board.makeMove(moves[i]);
-            // board.printJustFENBoard();
+            board.makeMove(moves[i]);
             board.flipColour();
-            double tempValue = minimax(board, depth + 1, alpha, beta, false);
-            board.flipColour();
-            // cout << "----------------------------------------" << endl;
-            // board.printJustFENBoard();
-            // cout << "undoing for ";
-            //moves[i].display();
+            double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising);
             board.undoMove(moves[i]);
-            //board.printJustFENBoard();
-            //cout << "----------------------------------------" << endl;
+            board.flipColour();
 
             if (tempValue <= leastValue) {
                 thirdLeastValue = secondLeastValue;
@@ -483,40 +460,44 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
 }
 
 int main() {
+    Board board;
+    board.precomputeAttackBitboards();
     cout << "Enter FEN Notation / Empty For Default Position: \n";
     string fen;
     getline(cin, fen); // input from terminal
     cout << "Enter Max Depth: \n";
     cin >> maxDepth;
-    Board board;
     if(fen.empty()) {
-        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        board.setupPosition(fen);
-    } else {
-        board.setupPosition(fen);
+        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";   
     }
+    board.setupPosition(fen);
     cout << "FEN Board: \n";
     board.printFENBoard();
-    double eval = evaluate(board);
+    //double eval = evaluate(board);
     //cout << "Evaluation: " << eval << endl;
     //cout << "isKingInCheck: " << board.isKingInCheck() << endl;
-    //unitTest();
-    // 3q4/8/8/2b1np2/1r6/8/3K4/8 b - - 0 1
     vector<Move> moves = board.legalMoveGeneration();
     //cout << "Number of Moves: " << moves.size() << endl;
     for (int i = 0; i < moves.size(); i++) {
-        moves[i].toString();
+        //moves[i].toString();
         //moves[i].display();
     }  
-    auto start = std::chrono::high_resolution_clock::now();
-    minimax(board, 0, -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity(), true);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end - start;
-    board.printFENBoard();
-    cout << "Nodes Searched: " << nodesSearched << " in " << duration.count() << endl;
-    cout << "Best Move: " << bestMoveIndex << endl;
-    moves[bestMoveIndex].toString();
-    //unitTest();
+//     auto start = std::chrono::high_resolution_clock::now();
+//    if(board.isWhiteToMove()) {
+//         minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), true);
+//    } else {
+//         minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), false);
+//    }
+    
+//     auto end = std::chrono::high_resolution_clock::now();
+//     std::chrono::duration<double> duration = end - start;
+//     cout << "Nodes Searched: " << nodesSearched << " in " << duration.count() << endl;
+
+//     moves[bestMoveIndex].toString();
+//     moves[secondBestMoveIndex].toString();
+//     moves[thirdBestMoveIndex].toString();
+    unitTest();
+
 
     
     return 0;

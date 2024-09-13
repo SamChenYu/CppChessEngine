@@ -10,21 +10,20 @@ double evaluate(Board& board) {
 
     double whitePos = 0.0;
     int whiteMaterial = 0;
-    for (int i = 0; i < 6; ++i) {
-        for (int j = 0; j < 64; ++j) {
-            if (board.bitboards[i] & (1ULL << j)) {
-                whitePos += mg_pieceSquareTable[i][j];
-                whiteMaterial += pieceValues[i];
-            }
-        }
-    }
-
     double blackPos = 0.0;
     int blackMaterial = 0;
-    for (int i = 6; i < 12; ++i) {
-        for (int j = 0; j < 64; ++j) {
-            if (board.bitboards[i] & (1ULL << j)) {
-                blackPos += mg_pieceSquareTable[i][j];
+
+    for (int i = 0; i < 12; ++i) {
+        uint64_t bitboard = board.bitboards[i];
+        int pieceIndex = i % 6;
+        while (bitboard) {
+            int square = __builtin_ctzll(bitboard);
+            bitboard &= bitboard - 1;  // Remove the lowest set bit
+            if (i < 6) {
+                whitePos += mg_pieceSquareTable[i][square];
+                whiteMaterial += pieceValues[i];
+            } else {
+                blackPos += mg_pieceSquareTable[i][square];
                 blackMaterial += pieceValues[i];
             }
         }
