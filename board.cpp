@@ -628,18 +628,20 @@ uint64_t Board::generateKingAttacks(int square) const {
     uint64_t bitboard = 1ULL << square;
 
     // King's movement directions: one square in any direction
-    if (square % 8 != 7) attacks |= bitboard >> 1;        // East (right)
-    if (square % 8 != 0) attacks |= bitboard << 1;        // West (left)
-    if (square / 8 != 7) attacks |= bitboard >> 8;        // North (up)
-    if (square / 8 != 0) attacks |= bitboard << 8;        // South (down)
+    if (square % 8 != 7) attacks |= bitboard << 1;        // East (right)
+    if (square % 8 != 0) attacks |= bitboard >> 1;        // West (left)
+    if (square / 8 != 7) attacks |= bitboard << 8;        // North (up)
+    if (square / 8 != 0) attacks |= bitboard >> 8;        // South (down)
 
-    if (square % 8 != 7 && square / 8 != 7) attacks |= bitboard >> 9;  // Northeast (up-right)
-    if (square % 8 != 0 && square / 8 != 7) attacks |= bitboard >> 7;  // Northwest (up-left)
-    if (square % 8 != 7 && square / 8 != 0) attacks |= bitboard << 7;  // Southeast (down-right)
-    if (square % 8 != 0 && square / 8 != 0) attacks |= bitboard << 9;  // Southwest (down-left)
+    if (square % 8 != 7 && square / 8 != 7) attacks |= bitboard << 9;  // Northeast (up-right)
+    if (square % 8 != 0 && square / 8 != 7) attacks |= bitboard << 7;  // Northwest (up-left)
+    if (square % 8 != 7 && square / 8 != 0) attacks |= bitboard >> 7;  // Southeast (down-right)
+    if (square % 8 != 0 && square / 8 != 0) attacks |= bitboard >> 9;  // Southwest (down-left)
 
     return attacks;
 }
+
+
 
 
 
