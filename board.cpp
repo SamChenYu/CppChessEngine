@@ -644,7 +644,7 @@ uint64_t Board::generateKingAttacks(int square) const {
 
 
 std::vector<Move> Board::legalMoveGeneration() {
-
+    return pseudoLegalMoves();
     // check the opponent attacking squares to see if we are in check
     uint64_t attackers = 0;
     uint64_t enemyPawns, enemyKnights, enemyBishopsQueens, enemyRooksQueens, enemyKing;
@@ -734,7 +734,7 @@ std::vector<Move> Board::pseudoLegalMoves() {
         // Single pawn move (White moves down, Black moves up)
         uint64_t singleMove = isWhiteTurn ? (1ULL << (fromSquare - 8)) : (1ULL << (fromSquare + 8));
         if (!(blockers & singleMove)) {
-            moves.push_back(Move(fromSquare, __builtin_ctzll(singleMove), playerPieceType, -1, -1, -1, Move::MoveType::Normal, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+            //moves.push_back(Move(fromSquare, __builtin_ctzll(singleMove), playerPieceType, -1, -1, -1, Move::MoveType::Normal, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
         }
 
         // Double pawn move (White from rank 6, Black from rank 1)

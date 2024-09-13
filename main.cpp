@@ -344,13 +344,14 @@ void unitTest() {
 }
 
 double minimax(Board& board, int depth, double alpha, double beta, bool isMaximising) {
+
+
     nodesSearched++;
     if(depth == maxDepth) {
         return evaluate(board);
     }
 
     vector<Move> moves = board.legalMoveGeneration();
-
     // checking if a leaf is a terminal node
     if(moves.empty()) { 
         int terminate = board.isGameOver();
@@ -368,7 +369,6 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
         double thirdBestValue = -std::numeric_limits<double>::infinity() + 2.0;
 
         for (int i = 0; i < moves.size(); i++) {
-            Move a = moves[i];
             board.makeMove(moves[i]);
             board.flipColour();
             double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising);
@@ -422,6 +422,7 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
             board.undoMove(moves[i]);
             board.flipColour();
 
+
             if (tempValue <= leastValue) {
                 thirdLeastValue = secondLeastValue;
                 secondLeastValue = leastValue;
@@ -462,7 +463,7 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
 int main() {
     Board board;
     board.precomputeAttackBitboards();
-    cout << "Enter FEN Notation / Empty For Default Position: \n";
+    std::cout << "Enter FEN Notation / Empty For Default Position: \n";
     string fen;
     getline(cin, fen); // input from terminal
     cout << "Enter Max Depth: \n";
@@ -479,24 +480,24 @@ int main() {
     vector<Move> moves = board.legalMoveGeneration();
     //cout << "Number of Moves: " << moves.size() << endl;
     for (int i = 0; i < moves.size(); i++) {
-        //moves[i].toString();
+        moves[i].toString();
         //moves[i].display();
     }  
-//     auto start = std::chrono::high_resolution_clock::now();
-//    if(board.isWhiteToMove()) {
-//         minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), true);
-//    } else {
-//         minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), false);
-//    }
+    auto start = std::chrono::high_resolution_clock::now();
+   if(board.isWhiteToMove()) {
+        minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), true);
+   } else {
+        minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), false);
+   }
     
-//     auto end = std::chrono::high_resolution_clock::now();
-//     std::chrono::duration<double> duration = end - start;
-//     cout << "Nodes Searched: " << nodesSearched << " in " << duration.count() << endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+    cout << "Nodes Searched: " << nodesSearched << " in " << duration.count() << endl;
 
-//     moves[bestMoveIndex].toString();
-//     moves[secondBestMoveIndex].toString();
-//     moves[thirdBestMoveIndex].toString();
-    unitTest();
+    moves[bestMoveIndex].toString();
+    moves[secondBestMoveIndex].toString();
+    moves[thirdBestMoveIndex].toString();
+    //unitTest();
 
 
     
