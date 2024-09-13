@@ -472,35 +472,43 @@ int main() {
         fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";   
     }
     board.setupPosition(fen);
-    //cout << "FEN Board: \n";
-    //board.printFENBoard();
-    double eval = evaluate(board);
-    cout << "Evaluation: " << eval << endl;
-    //cout << "isKingInCheck: " << board.isKingInCheck() << endl;
-    vector<Move> moves = board.legalMoveGeneration();
-    //cout << "Number of Moves: " << moves.size() << endl;
-    for (int i = 0; i < moves.size(); i++) {
-        //moves[i].toString();
-        //moves[i].display();
-    }  
-    auto start = std::chrono::high_resolution_clock::now();
-   if(board.isWhiteToMove()) {
-        minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), true);
-   } else {
-        minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), false);
-   }
-    
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end - start;
-    cout << "Nodes Searched: " << nodesSearched << " in " << duration.count() << " seconds" << endl;
-    if(bestMoveIndex == -1) {
-        cout << "No Best Move Found" << endl;
-    }
-    moves[bestMoveIndex].toString();
-    moves[secondBestMoveIndex].toString();
-    moves[thirdBestMoveIndex].toString();
-    //unitTest();
 
+
+    if(false) {
+        //cout << "FEN Board: \n";
+        //board.printFENBoard();
+        double eval = evaluate(board);
+        cout << "Evaluation: " << eval << endl;
+        //cout << "isKingInCheck: " << board.isKingInCheck() << endl;
+        vector<Move> moves = board.legalMoveGeneration();
+        //cout << "Number of Moves: " << moves.size() << endl;
+        for (int i = 0; i < moves.size(); i++) {
+            //moves[i].toString();
+            //moves[i].display();
+        }  
+        auto start = std::chrono::high_resolution_clock::now();
+        if(board.isWhiteToMove()) {
+                minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), true);
+        } else {
+                minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), false);
+        }
+        
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = end - start;
+        cout << "Nodes Searched: " << nodesSearched << " in " << duration.count() << " seconds" << endl;
+        if(bestMoveIndex == -1) {
+            cout << "No Best Move Found" << endl;
+        }
+
+        cout << "------------------" << endl;
+        moves[bestMoveIndex].toString();
+        moves[secondBestMoveIndex].toString();
+        moves[thirdBestMoveIndex].toString();
+        cout << "------------------" << endl;
+        //unitTest();
+    } else {
+        vector<Move> moves = board.legalMoveGeneration();
+    }
 
     
     return 0;

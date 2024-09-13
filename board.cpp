@@ -13,8 +13,6 @@ using namespace std;
 void Board::precomputeAttackBitboards() {
     for (int square = 0; square < 64; ++square) {
         knightAttacks[square] = generateKnightAttacks(square);
-        //bishopAttacks[square] = generateBishopAttacks(square, 0);
-        //rookAttacks[square] = generateRookAttacks(square, 0);
     }
 }
 
@@ -614,14 +612,8 @@ uint64_t Board::getKnightAttacks(int square) {
     return knightAttacks[square];
 }
 
-uint64_t getBishopAttacks(int square, uint64_t blockers) {
-    return 0;
-}
 
 
-uint64_t getRookAttacks(int square, uint64_t blockers) {
-    return 0;
-}
 
 uint64_t Board::generateKingAttacks(int square) const {
     uint64_t attacks = 0;
@@ -646,44 +638,167 @@ uint64_t Board::generateKingAttacks(int square) const {
 
 
 std::vector<Move> Board::legalMoveGeneration() {
-    return pseudoLegalMoves();
-    // check the opponent attacking squares to see if we are in check
-    uint64_t attackers = 0;
-    uint64_t enemyPawns, enemyKnights, enemyBishopsQueens, enemyRooksQueens, enemyKing;
+    //return pseudoLegalMoves();
+    vector<Move> legalMoves;
 
-    // Find the king's square and set up the enemy pieces' bitboards
+    // https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
+    // 1) - check the square the opponent is attacking -> generate your own king moves
+    // remove your own king during opponent attack generation because of sliding pieces
+
+    // below checks for the amount of pieces attacking the king as well as opponent attack bitboard to generate legal moves
+    uint64_t kingDangerSquares = 0;
+    uint64_t enemyPawns, enemyKnights, enemyBishopsQueens, enemyRooksQueens, enemyKing;
+    int kingIndex, kingSquare; // index is only used for blocker calculation
+    int kingAttacks = 0; // if double 
     if (!whiteToMove) {
         enemyPawns = bitboards[0];                   // White pawns
         enemyKnights = bitboards[1];                 // White knights
         enemyBishopsQueens = bitboards[2] | bitboards[4];   // White bishops and queens
         enemyRooksQueens = bitboards[3] | bitboards[4];     // White rooks and queens
         enemyKing = bitboards[5];                    // White king
+        kingIndex = 11;
+        kingSquare = __builtin_ctzll(bitboards[11]);
     } else {
         enemyPawns = bitboards[6];                   // Black pawns
         enemyKnights = bitboards[7];                 // Black knights
         enemyBishopsQueens = bitboards[8] | bitboards[10];  // Black bishops and queens
         enemyRooksQueens = bitboards[9] | bitboards[10];    // Black rooks and queens
         enemyKing = bitboards[11];                   // Black king
+        kingIndex = 5;
+        kingSquare = __builtin_ctzll(bitboards[5]);
     }
 
     // Calculate the blocker bitboard (all pieces)
-    uint64_t blockers = 0;
+    uint64_t blockers = 0; 
     for (int i = 0; i < 12; ++i) {
         blockers |= bitboards[i];
     }
-    
-    
 
+    if (!whiteToMove) {
+        // Checking pawn attacks
+        if ((enemyPawns >> 9) & (1ULL << kingSquare) & ~FILE_A) kingAttacks++;
+        if ((enemyPawns >> 7) & (1ULL << kingSquare) & ~FILE_H) kingAttacks++;
 
+        kingDangerSquares |= ((enemyPawns >> 9) & ~FILE_A);  // Pawns attacking from the left
+        kingDangerSquares |= ((enemyPawns >> 7) & ~FILE_H);  // Pawns attacking from the right
 
-    vector<Move> legalMoves = pseudoLegalMoves();
-    for(int i=legalMoves.size() - 1; i>=0; i--) {
-        makeMove(legalMoves[i]);
-        if(isKingInCheck()) {
-            legalMoves.erase(legalMoves.begin() + i);
-        }
-        undoMove(legalMoves[i]);
+    } else {
+        if ((enemyPawns << 9) & (1ULL << kingSquare) & ~FILE_H) kingAttacks++;
+        if ((enemyPawns << 7) & (1ULL << kingSquare) & ~FILE_A) kingAttacks++;
+
+        kingDangerSquares |= ((enemyPawns << 9) & ~FILE_H);
+        kingDangerSquares |= ((enemyPawns << 7) & ~FILE_A);
     }
+
+    // Checking knight attacks
+    uint64_t knightAttacks = 0;
+    while (enemyKnights) {
+        int square = __builtin_ctzll(enemyKnights);
+        knightAttacks |= generateKnightAttacks(square);
+
+        kingDangerSquares |= generateKnightAttacks(square);
+        enemyKnights &= enemyKnights - 1;
+    }
+    if (knightAttacks & (1ULL << kingSquare)) kingAttacks++;
+
+    // Checking bishop/queen (diagonal) attacks
+    uint64_t bishopAttacks = 0;
+    while (enemyBishopsQueens) {
+        int square = __builtin_ctzll(enemyBishopsQueens);
+        bishopAttacks |= generateBishopAttacks(square, blockers);
+
+        kingDangerSquares |= generateBishopAttacks(square, blockers);
+        enemyBishopsQueens &= enemyBishopsQueens - 1;
+    }
+    if (bishopAttacks & (1ULL << kingSquare)) kingAttacks++;
+
+    // Checking rook/queen (horizontal/vertical) attacks
+    uint64_t rookAttacks = 0;
+    while (enemyRooksQueens) {
+        int square = __builtin_ctzll(enemyRooksQueens);
+        rookAttacks |= generateRookAttacks(square, blockers);
+        kingDangerSquares |= generateRookAttacks(square, blockers);
+        enemyRooksQueens &= enemyRooksQueens - 1;
+    }
+    if (rookAttacks & (1ULL << kingSquare)) kingAttacks++;
+
+    // Checking king attacks
+    kingDangerSquares |= generateKingAttacks(__builtin_ctzll(enemyKing));
+
+
+    bool check, doubleCheck;
+    // Check if there's a double check
+    if (kingAttacks >= 2) {
+        std::cout << "Double check!\n";
+        doubleCheck = true;
+        check = true;
+    } else if (kingAttacks == 1) {
+        std::cout << "Single check!\n";
+        doubleCheck = false;
+        check = true;
+    } else {
+        std::cout << "King is not in check.\n";
+        doubleCheck = false;
+        check = false;
+    }
+    std:: cout << "King Danger Squares\n";
+    std::bitset<64> dangerSquares(kingDangerSquares);
+    for (int i = 0; i < 64; i++) {
+        std::cout << dangerSquares[i];
+        if ((i + 1) % 8 == 0) {
+            std::cout << std::endl;
+        }
+    }
+
+    // 2) -> if in check, then evade, captures or block the check
+    //    -> if in double check, only evade
+    //    -> en passant checks
+
+
+    if(doubleCheck) {
+        // Evade the double check
+        uint64_t kingMoves = generateKingAttacks(kingSquare) & ~kingDangerSquares;
+        while (kingMoves) {
+            int toSquare = __builtin_ctzll(kingMoves);
+            if(pieceTypeAtSquare(toSquare) == -1) {
+                legalMoves.push_back(Move(kingSquare, toSquare, kingIndex, -1, -1, -1, Move::MoveType::Normal, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+            } else {
+                legalMoves.push_back(Move(kingSquare, toSquare, kingIndex, pieceTypeAtSquare(toSquare), -1, -1, Move::MoveType::Capture, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+            }
+            kingMoves &= kingMoves - 1;
+        }
+
+    } else if(check) {
+        // Evade, capture or block the check
+    }
+
+
+
+
+
+    // 3) -> pinned pieces
+    /*
+    
+        1 -Moves from the opponent’s sliding pieces.
+        2 -“Sliding piece” moves from my king in the opposite direction.
+        3 -The overlap of these two rays.
+        If the result of 3) lands on one of my pieces, then it is pinned.
+
+        Once all the pinned pieces are identified, you can remove them from the board and calculate the moves from the enemy’s pinning piece to your king. This will give you a “ray” of legal moves for each of your pinned pieces.
+
+        Note that since knights can only move in an L-shape, they can never move along a pin ray. The only piece types you need to consider are:
+
+        On a diagonal ray: bishops, queens, and pawns (captures only).
+        On a non-diagonal ray: rooks, queens, and pawns (pushes only).
+    
+    */
+
+
+
+
+
+    
+
     return legalMoves;
 }
 

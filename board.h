@@ -37,10 +37,6 @@ public:
    void precomputeAttackBitboards();
    uint64_t knightAttacks[64];
    uint64_t getKnightAttacks(int square);
-   uint64_t bishopAttacks[64];
-   uint64_t getBishopAttacks(int square);
-   uint64_t rookAttacks[64];
-   uint64_t getRookAttacks(int square);
 
 
 
