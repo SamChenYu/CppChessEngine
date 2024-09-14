@@ -612,9 +612,6 @@ uint64_t Board::getKnightAttacks(int square) {
     return knightAttacks[square];
 }
 
-
-
-
 uint64_t Board::generateKingAttacks(int square) const {
     uint64_t attacks = 0;
     uint64_t bitboard = 1ULL << square;
@@ -650,6 +647,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     uint64_t enemyPawns, enemyKnights, enemyBishopsQueens, enemyRooksQueens, enemyKing;
     int kingIndex, kingSquare; // index is only used for blocker calculation
     int kingAttacks = 0; // if double 
+    int kingAttackedAtSquare = -1;
     if (!whiteToMove) {
         enemyPawns = bitboards[0];                   // White pawns
         enemyKnights = bitboards[1];                 // White knights
@@ -676,16 +674,15 @@ std::vector<Move> Board::legalMoveGeneration() {
 
     if (!whiteToMove) {
         // Checking pawn attacks
-        if ((enemyPawns >> 9) & (1ULL << kingSquare) & ~FILE_A) kingAttacks++;
-        if ((enemyPawns >> 7) & (1ULL << kingSquare) & ~FILE_H) kingAttacks++;
+        if ((enemyPawns >> 9) & (1ULL << kingSquare) & ~FILE_A) {kingAttacks++; kingAttackedAtSquare = kingSquare + 9;}
+        if ((enemyPawns >> 7) & (1ULL << kingSquare) & ~FILE_H) {kingAttacks++; kingAttackedAtSquare = kingSquare + 7;}
 
         kingDangerSquares |= ((enemyPawns >> 9) & ~FILE_A);  // Pawns attacking from the left
         kingDangerSquares |= ((enemyPawns >> 7) & ~FILE_H);  // Pawns attacking from the right
 
     } else {
-        if ((enemyPawns << 9) & (1ULL << kingSquare) & ~FILE_H) kingAttacks++;
-        if ((enemyPawns << 7) & (1ULL << kingSquare) & ~FILE_A) kingAttacks++;
-
+        if ((enemyPawns << 9) & (1ULL << kingSquare) & ~FILE_H) {kingAttacks++; kingAttackedAtSquare = kingSquare - 9;}
+        if ((enemyPawns << 7) & (1ULL << kingSquare) & ~FILE_A) {kingAttacks++; kingAttackedAtSquare = kingSquare - 7;}
         kingDangerSquares |= ((enemyPawns << 9) & ~FILE_H);
         kingDangerSquares |= ((enemyPawns << 7) & ~FILE_A);
     }
@@ -695,51 +692,54 @@ std::vector<Move> Board::legalMoveGeneration() {
     while (enemyKnights) {
         int square = __builtin_ctzll(enemyKnights);
         knightAttacks |= generateKnightAttacks(square);
-
         kingDangerSquares |= generateKnightAttacks(square);
+
+        if(knightAttacks & (1ULL << kingSquare)) {
+            kingAttacks++; 
+            kingAttackedAtSquare = square;
+        }
+
         enemyKnights &= enemyKnights - 1;
     }
-    if (knightAttacks & (1ULL << kingSquare)) kingAttacks++;
 
     // Checking bishop/queen (diagonal) attacks
     uint64_t bishopAttacks = 0;
     while (enemyBishopsQueens) {
         int square = __builtin_ctzll(enemyBishopsQueens);
         bishopAttacks |= generateBishopAttacks(square, blockers);
-
+        if (bishopAttacks & (1ULL << kingSquare)) {
+            kingAttacks++;
+            kingAttackedAtSquare = square;
+        }
         kingDangerSquares |= generateBishopAttacks(square, blockers);
         enemyBishopsQueens &= enemyBishopsQueens - 1;
     }
-    if (bishopAttacks & (1ULL << kingSquare)) kingAttacks++;
+
 
     // Checking rook/queen (horizontal/vertical) attacks
     uint64_t rookAttacks = 0;
     while (enemyRooksQueens) {
         int square = __builtin_ctzll(enemyRooksQueens);
         rookAttacks |= generateRookAttacks(square, blockers);
+        if (rookAttacks & (1ULL << kingSquare)) {
+            kingAttacks++;
+            kingAttackedAtSquare = square;
+        }
         kingDangerSquares |= generateRookAttacks(square, blockers);
         enemyRooksQueens &= enemyRooksQueens - 1;
     }
-    if (rookAttacks & (1ULL << kingSquare)) kingAttacks++;
+
 
     // Checking king attacks
     kingDangerSquares |= generateKingAttacks(__builtin_ctzll(enemyKing));
 
-
-    bool check, doubleCheck;
     // Check if there's a double check
     if (kingAttacks >= 2) {
         std::cout << "Double check!\n";
-        doubleCheck = true;
-        check = true;
     } else if (kingAttacks == 1) {
         std::cout << "Single check!\n";
-        doubleCheck = false;
-        check = true;
     } else {
         std::cout << "King is not in check.\n";
-        doubleCheck = false;
-        check = false;
     }
     std:: cout << "King Danger Squares\n";
     std::bitset<64> dangerSquares(kingDangerSquares);
@@ -749,31 +749,43 @@ std::vector<Move> Board::legalMoveGeneration() {
             std::cout << std::endl;
         }
     }
+    std::cout << "King Attacked At Square: " << kingAttackedAtSquare << std::endl;
 
     // 2) -> if in check, then evade, captures or block the check
     //    -> if in double check, only evade
     //    -> en passant checks
 
 
-    if(doubleCheck) {
-        // Evade the double check
+    if(kingAttacks > 0) {
+        // Evade the double check by only moving the king
+        // Also make sure that any captures are legal and on enemy pieces
         uint64_t kingMoves = generateKingAttacks(kingSquare) & ~kingDangerSquares;
         while (kingMoves) {
             int toSquare = __builtin_ctzll(kingMoves);
             if(pieceTypeAtSquare(toSquare) == -1) {
                 legalMoves.push_back(Move(kingSquare, toSquare, kingIndex, -1, -1, -1, Move::MoveType::Normal, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+                kingMoves &= kingMoves - 1;
+                continue;
+            } 
+            if(whiteToMove) {
+                if(pieceTypeAtSquare(toSquare) >= 6) {
+                    legalMoves.push_back(Move(kingSquare, toSquare, kingIndex, pieceTypeAtSquare(toSquare), -1, -1, Move::MoveType::Capture, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+                }
             } else {
-                legalMoves.push_back(Move(kingSquare, toSquare, kingIndex, pieceTypeAtSquare(toSquare), -1, -1, Move::MoveType::Capture, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
-            }
+                if(pieceTypeAtSquare(toSquare) < 6) {
+                    legalMoves.push_back(Move(kingSquare, toSquare, kingIndex, pieceTypeAtSquare(toSquare), -1, -1, Move::MoveType::Capture, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+                }
+            }   
             kingMoves &= kingMoves - 1;
         }
 
-    } else if(check) {
-        // Evade, capture or block the check
     }
 
+    if(kingAttacks == 2) return legalMoves; // No other moves can be made
 
-
+    if(kingAttacks == 1) {
+        // Capture or Block the attacking piece
+    }
 
 
     // 3) -> pinned pieces
