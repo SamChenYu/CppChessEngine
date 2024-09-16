@@ -516,7 +516,7 @@ bool Board::isKingInCheck() {
 
 
 
-// Precomputing Tables
+
 uint64_t Board::generateKnightAttacks(int square) const {
     uint64_t knight = (1ULL << square);  // Start with the knight's current position
 
@@ -608,10 +608,6 @@ uint64_t Board::generateRookAttacks(int square, uint64_t blockers) const {
     return attacks;
 }
 
-uint64_t Board::getKnightAttacks(int square) {
-    return knightAttacks[square];
-}
-
 uint64_t Board::generateKingAttacks(int square) const {
     uint64_t attacks = 0;
     uint64_t bitboard = 1ULL << square;
@@ -630,7 +626,102 @@ uint64_t Board::generateKingAttacks(int square) const {
     return attacks;
 }
 
+// These are used only to generate x ray bitboards
 
+uint64_t Board::generateBishopXRay(int square, uint64_t blockers) const {
+
+    uint64_t attacks = 0;
+    bool xRay = false;
+
+    // North-East diagonal (down-right, since the board is flipped)
+    for (int shift = square - 9; shift >= 0 && (shift % 8 != 7); shift -= 9) {
+        attacks |= (1ULL << shift);
+        if (blockers & (1ULL << shift)) {
+            if(xRay) break;
+            xRay = true;
+        }
+    }
+    xRay = false;
+
+    // North-West diagonal (down-left)
+    for (int shift = square - 7; shift >= 0 && (shift % 8 != 0); shift -= 7) {
+        attacks |= (1ULL << shift);
+        if (blockers & (1ULL << shift)) {
+            if(xRay) break;
+            xRay = true;
+        }
+    }
+    xRay = false;
+    // South-East diagonal (up-right)
+    for (int shift = square + 7; shift < 64 && (shift % 8 != 7); shift += 7) {
+        attacks |= (1ULL << shift);
+        if (blockers & (1ULL << shift)) {
+            if(xRay) break;
+            xRay = true;
+        }
+    }
+    xRay = false;
+    // South-West diagonal (up-left)
+    for (int shift = square + 9; shift < 64 && (shift % 8 != 0); shift += 9) {
+        attacks |= (1ULL << shift);
+        if (blockers & (1ULL << shift)) {
+            if(xRay) break;
+            xRay = true;
+        }
+    }
+
+    return attacks;
+}
+
+uint64_t Board::generateRookXRay(int square, uint64_t blockers) const {
+    uint64_t attacks = 0;
+    bool xRay = false;
+
+    // Generate attacks to the right (East direction)
+    for (int shift = square - 1; shift % 8 != 7 && shift >= 0; shift--) {
+        attacks |= (1ULL << shift);
+        if (blockers & (1ULL << shift)) {
+            if(xRay) break;
+            xRay = true;
+        }
+    }
+    xRay = false;
+    // Generate attacks to the left (West direction)
+    for (int shift = square + 1; shift % 8 != 0 && shift < 64; shift++) {
+        attacks |= (1ULL << shift);
+        if (blockers & (1ULL << shift)) {
+            if(xRay) break;
+            xRay = true;
+        }
+    }
+    xRay = false;
+    // Generate attacks upwards (South direction)
+    for (int shift = square - 8; shift >= 0; shift -= 8) {
+        attacks |= (1ULL << shift);
+        if (blockers & (1ULL << shift)) {
+            if(xRay) break;
+            xRay = true;
+        }
+    }
+    xRay = false;
+    // Generate attacks downwards (North direction)
+    for (int shift = square + 8; shift < 64; shift += 8) {
+        attacks |= (1ULL << shift);
+        if (blockers & (1ULL << shift)) {
+            if(xRay) break;
+            xRay = true;
+        }
+    }
+
+    return attacks;
+}
+
+
+
+// Precomputing Table getters
+uint64_t Board::getKnightAttacks(int square) {
+    return knightAttacks[square];
+}
 
 
 
@@ -721,8 +812,9 @@ std::vector<Move> Board::legalMoveGeneration() {
 
     // Checking bishop/queen (diagonal) attacks
     uint64_t bishopAttacks = 0;
-    while (enemyBishopsQueens) {
-        int square = __builtin_ctzll(enemyBishopsQueens);
+    uint64_t enemyBishopsQueensCopy = enemyBishopsQueens;
+    while (enemyBishopsQueensCopy) {
+        int square = __builtin_ctzll(enemyBishopsQueensCopy);
         bishopAttacks |= generateBishopAttacks(square, blockers);
         if (bishopAttacks & (1ULL << kingSquare)) {
             kingAttacks++;
@@ -730,14 +822,15 @@ std::vector<Move> Board::legalMoveGeneration() {
             checkingPieceType = whiteToMove? 8 : 2;
         }
         kingDangerSquares |= generateBishopAttacks(square, blockers);
-        enemyBishopsQueens &= enemyBishopsQueens - 1;
+        enemyBishopsQueensCopy &= enemyBishopsQueensCopy - 1;
     }
 
 
     // Checking rook/queen (horizontal/vertical) attacks
     uint64_t rookAttacks = 0;
-    while (enemyRooksQueens) {
-        int square = __builtin_ctzll(enemyRooksQueens);
+    uint64_t enemyRooksQueensCopy = enemyRooksQueens;
+    while (enemyRooksQueensCopy) {
+        int square = __builtin_ctzll(enemyRooksQueensCopy);
         rookAttacks |= generateRookAttacks(square, blockers);
         if (rookAttacks & (1ULL << kingSquare)) {
             kingAttacks++;
@@ -745,7 +838,7 @@ std::vector<Move> Board::legalMoveGeneration() {
             checkingPieceType = whiteToMove? 9 : 3;
         }
         kingDangerSquares |= generateRookAttacks(square, blockers);
-        enemyRooksQueens &= enemyRooksQueens - 1;
+        enemyRooksQueensCopy &= enemyRooksQueensCopy - 1;
     }
 
 
@@ -1041,10 +1134,11 @@ std::vector<Move> Board::legalMoveGeneration() {
 
     // ******************************************************************************
     // At this stage our king is not in check, so we can generate all the legal moves but we have to be careful of
+    // pinned pieces, we will generate ALL pseudo legal moves but take into account the xray attacks for pinned pieces.
     // 3) -> pinned pieces
     /*
         1 -Moves from the opponent’s sliding pieces.
-        2 -“Sliding piece” moves from my king in the opposite direction.
+        2 -“Sliding attacking” moves from my king in the opposite direction.
         3 -The overlap of these two rays.
         If the result of 3) lands on one of my pieces, then it is pinned.
 
@@ -1056,15 +1150,37 @@ std::vector<Move> Board::legalMoveGeneration() {
         On a non-diagonal ray: rooks, queens, and pawns (pushes only).
     */
    // ******************************************************************************
-   uint64_t attackRays = 0ULL; // get attack rays from all sliding pieces
-   
+   uint64_t xrayBitboard = 0ULL; // get attack rays from all sliding pieces - will ignore one friendly piece
+    blockers |= king; // add the king to the blockers so that we can get the xray bitboard  
+    // Checking bishop/queen (diagonal) attacks
+    enemyBishopsQueensCopy = enemyBishopsQueens;
+    while (enemyBishopsQueensCopy) {
+        int square = __builtin_ctzll(enemyBishopsQueensCopy);
+        xrayBitboard |= generateBishopXRay(square, blockers);
+        enemyBishopsQueensCopy &= enemyBishopsQueensCopy - 1;
+    }
+
+    // Checking rook/queen (horizontal/vertical) attacks
+    rookAttacks = 0;
+    enemyRooksQueensCopy = enemyRooksQueens;
+    while (enemyRooksQueensCopy) {
+        int square = __builtin_ctzll(enemyRooksQueensCopy);
+        xrayBitboard |= generateRookXRay(square, blockers);
+        enemyRooksQueensCopy &= enemyRooksQueensCopy - 1;
+    }
 
 
-
-
-
-    
-
+    std:: cout << "xrayBitboard\n";
+    std::bitset<64> xray(xrayBitboard);
+    for (int i = 0; i < 64; i++) {
+        std::cout << xray[i];
+        if ((i + 1) % 8 == 0) {
+            std::cout << std::endl;
+        }
+    }
+    // ******************************************************************************
+    // en passant discovery check
+    // ******************************************************************************
     return legalMoves;
 }
 

@@ -68,6 +68,9 @@ public:
     uint64_t generateRookAttacks(int square, uint64_t blockers) const;
     uint64_t generateKingAttacks(int square) const;
 
+    uint64_t generateBishopXRay(int square, uint64_t blockers) const;
+    uint64_t generateRookXRay(int square, uint64_t blockers) const;
+
 
     uint64_t kingDangerSquares() const;
     bool isWhiteToMove() const {
