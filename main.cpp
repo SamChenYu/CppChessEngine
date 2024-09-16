@@ -508,6 +508,7 @@ int main() {
         //unitTest();
     } else {
         vector<Move> moves = board.legalMoveGeneration();
+        cout << "Number of Moves: " << moves.size() << endl;
     }
 
     
