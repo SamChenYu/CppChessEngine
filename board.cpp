@@ -628,92 +628,121 @@ uint64_t Board::generateKingAttacks(int square) const {
 
 // These are used only to generate x ray bitboards
 
-uint64_t Board::generateBishopXRay(int square, uint64_t blockers) const {
-
+uint64_t Board::generateBishopXRay(int square, int kingSquare, uint64_t blockers) const {
     uint64_t attacks = 0;
     bool xRay = false;
+    int kingRank = kingSquare / 8;
+    int kingFile = kingSquare % 8;
+    int pieceRank = square / 8;
+    int pieceFile = square % 8;
 
-    // North-East diagonal (down-right, since the board is flipped)
-    for (int shift = square - 9; shift >= 0 && (shift % 8 != 7); shift -= 9) {
-        attacks |= (1ULL << shift);
-        if (blockers & (1ULL << shift)) {
-            if(xRay) break;
-            xRay = true;
-        }
-    }
-    xRay = false;
-
-    // North-West diagonal (down-left)
-    for (int shift = square - 7; shift >= 0 && (shift % 8 != 0); shift -= 7) {
-        attacks |= (1ULL << shift);
-        if (blockers & (1ULL << shift)) {
-            if(xRay) break;
-            xRay = true;
-        }
-    }
-    xRay = false;
-    // South-East diagonal (up-right)
-    for (int shift = square + 7; shift < 64 && (shift % 8 != 7); shift += 7) {
-        attacks |= (1ULL << shift);
-        if (blockers & (1ULL << shift)) {
-            if(xRay) break;
-            xRay = true;
-        }
-    }
-    xRay = false;
-    // South-West diagonal (up-left)
-    for (int shift = square + 9; shift < 64 && (shift % 8 != 0); shift += 9) {
-        attacks |= (1ULL << shift);
-        if (blockers & (1ULL << shift)) {
-            if(xRay) break;
-            xRay = true;
+    // North-East diagonal (up-right)
+    if (kingRank > pieceRank && kingFile > pieceFile) {
+        for (int shift = square + 9; shift < 64 && (shift % 8 != 0); shift += 9) {
+            attacks |= (1ULL << shift);
+            if (blockers & (1ULL << shift)) {
+                if (xRay || shift == kingSquare) break;
+                xRay = true;
+            }
         }
     }
 
-    return attacks;
+    // North-West diagonal (up-left)
+    if (kingRank > pieceRank && kingFile < pieceFile) {
+        for (int shift = square + 7; shift < 64 && (shift % 8 != 7); shift += 7) {
+            attacks |= (1ULL << shift);
+            if (blockers & (1ULL << shift)) {
+                if (xRay || shift == kingSquare) break;
+                xRay = true;
+            }
+        }
+    }
+
+    // South-East diagonal (down-right)
+    if (kingRank < pieceRank && kingFile > pieceFile) {
+        for (int shift = square - 7; shift >= 0 && (shift % 8 != 0); shift -= 7) {
+            attacks |= (1ULL << shift);
+            if (blockers & (1ULL << shift)) {
+                if (xRay || shift == kingSquare) break;
+                xRay = true;
+            }
+        }
+    }
+
+    // South-West diagonal (down-left)
+    if (kingRank < pieceRank && kingFile < pieceFile) {
+        for (int shift = square - 9; shift >= 0 && (shift % 8 != 7); shift -= 9) {
+            attacks |= (1ULL << shift);
+            if (blockers & (1ULL << shift)) {
+                if (xRay || shift == kingSquare) break;
+                xRay = true;
+            }
+        }
+    }
+
+    // Only return attacks if the king was encountered on the x-ray path
+    return (attacks & (1ULL << kingSquare)) ? attacks : 0;
 }
 
-uint64_t Board::generateRookXRay(int square, uint64_t blockers) const {
+
+
+
+
+
+uint64_t Board::generateRookXRay(int square, int kingSquare, uint64_t blockers) const {
     uint64_t attacks = 0;
     bool xRay = false;
+    int kingRank = kingSquare / 8;
+    int kingFile = kingSquare % 8;
+    int pieceRank = square / 8;
+    int pieceFile = square % 8;
 
-    // Generate attacks to the right (East direction)
-    for (int shift = square - 1; shift % 8 != 7 && shift >= 0; shift--) {
-        attacks |= (1ULL << shift);
-        if (blockers & (1ULL << shift)) {
-            if(xRay) break;
-            xRay = true;
-        }
-    }
-    xRay = false;
-    // Generate attacks to the left (West direction)
-    for (int shift = square + 1; shift % 8 != 0 && shift < 64; shift++) {
-        attacks |= (1ULL << shift);
-        if (blockers & (1ULL << shift)) {
-            if(xRay) break;
-            xRay = true;
-        }
-    }
-    xRay = false;
-    // Generate attacks upwards (South direction)
-    for (int shift = square - 8; shift >= 0; shift -= 8) {
-        attacks |= (1ULL << shift);
-        if (blockers & (1ULL << shift)) {
-            if(xRay) break;
-            xRay = true;
-        }
-    }
-    xRay = false;
-    // Generate attacks downwards (North direction)
-    for (int shift = square + 8; shift < 64; shift += 8) {
-        attacks |= (1ULL << shift);
-        if (blockers & (1ULL << shift)) {
-            if(xRay) break;
-            xRay = true;
+    // East (right) direction
+    if (kingRank == pieceRank && kingFile > pieceFile) {
+        for (int shift = square + 1; shift % 8 != 0 && shift < 64; shift++) {
+            attacks |= (1ULL << shift);
+            if (blockers & (1ULL << shift)) {
+                if (xRay || shift == kingSquare) break;
+                xRay = true;
+            }
         }
     }
 
-    return attacks;
+    // West (left) direction
+    if (kingRank == pieceRank && kingFile < pieceFile) {
+        for (int shift = square - 1; shift % 8 != 7 && shift >= 0; shift--) {
+            attacks |= (1ULL << shift);
+            if (blockers & (1ULL << shift)) {
+                if (xRay || shift == kingSquare) break;
+                xRay = true;
+            }
+        }
+    }
+
+    // North (up) direction
+    if (kingFile == pieceFile && kingRank < pieceRank) {
+        for (int shift = square - 8; shift >= 0; shift -= 8) {
+            attacks |= (1ULL << shift);
+            if (blockers & (1ULL << shift)) {
+                if (xRay || shift == kingSquare) break;
+                xRay = true;
+            }
+        }
+    }
+
+    // South (down) direction
+    if (kingFile == pieceFile && kingRank > pieceRank) {
+        for (int shift = square + 8; shift < 64; shift += 8) {
+            attacks |= (1ULL << shift);
+            if (blockers & (1ULL << shift)) {
+                if (xRay || shift == kingSquare) break;
+                xRay = true;
+            }
+        }
+    }
+
+    // Only return attacks if the king was encountered on the x-ray path
+    return (attacks & (1ULL << kingSquare)) ? attacks : 0;
 }
 
 
@@ -1156,7 +1185,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     enemyBishopsQueensCopy = enemyBishopsQueens;
     while (enemyBishopsQueensCopy) {
         int square = __builtin_ctzll(enemyBishopsQueensCopy);
-        xrayBitboard |= generateBishopXRay(square, blockers);
+        xrayBitboard |= generateBishopXRay(square, kingSquare, blockers);
         enemyBishopsQueensCopy &= enemyBishopsQueensCopy - 1;
     }
 
@@ -1165,7 +1194,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     enemyRooksQueensCopy = enemyRooksQueens;
     while (enemyRooksQueensCopy) {
         int square = __builtin_ctzll(enemyRooksQueensCopy);
-        xrayBitboard |= generateRookXRay(square, blockers);
+        xrayBitboard |= generateRookXRay(square, kingSquare, blockers);
         enemyRooksQueensCopy &= enemyRooksQueensCopy - 1;
     }
 
@@ -1180,7 +1209,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     }
     // ******************************************************************************
     // en passant discovery check
-    // ******************************************************************************
+    
     return legalMoves;
 }
 
