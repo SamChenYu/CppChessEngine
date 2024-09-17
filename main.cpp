@@ -8,6 +8,9 @@
 #include "evaluation.h"
 
 #include <chrono>
+#include <future>
+#include <limits>
+#include <algorithm>
 // cd ~/Desktop/C++ChessEngine
 // g++ -std=c++11 -o chessengine.out main.cpp board.cpp move.cpp evaluation.cpp
 // ./chessengine.out
@@ -20,6 +23,7 @@ int maxDepth = 1;
 int bestMoveIndex = -1;
 int secondBestMoveIndex = -1;
 int thirdBestMoveIndex = -1;
+int threadNum = 4;
 
 void unitTest() {
 
@@ -362,6 +366,11 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
         }
     }
 
+    if (depth == 0) {
+        // Use multi-threading at the root level
+        //return parallelMinimax(board, depth, alpha, beta, isMaximising);
+    }
+
     // minimax
     if (isMaximising) {
         double bestValue = -std::numeric_limits<double>::infinity();
@@ -372,8 +381,9 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
             board.makeMove(moves[i]);
             board.flipColour();
             double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising);
-            board.undoMove(moves[i]);
             board.flipColour();
+            board.undoMove(moves[i]);
+
 
 
             if (tempValue >= bestValue) {
@@ -419,9 +429,8 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
             board.makeMove(moves[i]);
             board.flipColour();
             double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising);
-            board.undoMove(moves[i]);
             board.flipColour();
-
+            board.undoMove(moves[i]);
 
             if (tempValue <= leastValue) {
                 thirdLeastValue = secondLeastValue;
@@ -460,6 +469,8 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
     }
 }
 
+
+
 int main() {
     Board board;
     board.precomputeAttackBitboards();
@@ -474,7 +485,7 @@ int main() {
     board.setupPosition(fen);
 
 
-    if(false) {
+    if(true) {
         //cout << "FEN Board: \n";
         //board.printFENBoard();
         double eval = evaluate(board);
@@ -483,9 +494,11 @@ int main() {
         vector<Move> moves = board.legalMoveGeneration();
         //cout << "Number of Moves: " << moves.size() << endl;
         for (int i = 0; i < moves.size(); i++) {
-            //moves[i].toString();
+            moves[i].toString();
             //moves[i].display();
-        }  
+        }
+
+
         auto start = std::chrono::high_resolution_clock::now();
         if(board.isWhiteToMove()) {
                 minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), true);
@@ -499,7 +512,8 @@ int main() {
         if(bestMoveIndex == -1) {
             cout << "No Best Move Found" << endl;
         }
-
+        cout << "FEN Board: \n";
+        board.printFENBoard();
         cout << "------------------" << endl;
         moves[bestMoveIndex].toString();
         moves[secondBestMoveIndex].toString();
@@ -510,6 +524,7 @@ int main() {
         vector<Move> moves = board.legalMoveGeneration();
         cout << "Number of Moves: " << moves.size() << endl;
     }
+    cout << "white to move: " << board.isWhiteToMove() << endl;
 
     
     return 0;

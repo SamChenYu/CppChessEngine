@@ -36,21 +36,21 @@ double evaluate(Board& board) {
     double materialWeight;
     double positionWeight;
     int absDiff = std::abs(materialDifference);
-    if (absDiff > 8) {
+    if (absDiff > 5) {
         materialWeight = 0.9;
         positionWeight = 0.1;
-    } else if (absDiff > 6) {
+    } else if (absDiff > 4) {
         materialWeight = 0.7;
         positionWeight = 0.3;
-    } else if (absDiff > 4) {
+    } else if (absDiff > 3) {
         materialWeight = 0.5;
         positionWeight = 0.5;
-    } else if (absDiff > 1) {
+    } else if (absDiff > 2) {
         materialWeight = 0.3;
         positionWeight = 0.7;
     } else {
-        materialWeight = 0.4;
-        positionWeight = 0.6;
+        materialWeight = 0.9;
+        positionWeight = 0.1;
     }
 
 

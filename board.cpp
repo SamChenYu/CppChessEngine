@@ -411,6 +411,14 @@ void Board::undoMove(const Move& move) {
     }
         // whiteToMove = !whiteToMove;
         // Full move clocks etc Todo
+        whiteKingSideCastling = move.getWhiteKingSideCastling();
+        whiteQueenSideCastling = move.getWhiteQueenSideCastling();
+        blackKingSideCastling = move.getBlackKingSideCastling();
+        blackQueenSideCastling = move.getBlackQueenSideCastling();
+        enPassantSquare = move.getEnPassantSquare();
+        //halfmoveClock = move.getHalfmoveClock();
+        //fullmoveNumber = move.getFullmoveNumber();
+
 }
 
 void Board::flipColour() {
@@ -755,7 +763,7 @@ uint64_t Board::getKnightAttacks(int square) {
 
 
 std::vector<Move> Board::legalMoveGeneration() {
-    //return pseudoLegalMoves();
+    
     vector<Move> legalMoves;
 
     // https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/
@@ -811,6 +819,7 @@ std::vector<Move> Board::legalMoveGeneration() {
         blockers |= bitboards[i];
     }
 
+
     if (!whiteToMove) {
         // Checking pawn attacks
         if ((enemyPawns >> 9) & (1ULL << kingSquare) & ~FILE_A) {kingAttacks++; kingAttackedAtSquare = kingSquare + 9; checkingPieceType = 0;}
@@ -828,8 +837,9 @@ std::vector<Move> Board::legalMoveGeneration() {
 
     // Checking knight attacks
     uint64_t knightAttacks = 0;
-    while (enemyKnights) {
-        int square = __builtin_ctzll(enemyKnights);
+    uint64_t enemyKnightsCopy = enemyKnights;
+    while (enemyKnightsCopy) {
+        int square = __builtin_ctzll(enemyKnightsCopy);
         knightAttacks |= generateKnightAttacks(square);
         kingDangerSquares |= generateKnightAttacks(square);
 
@@ -839,7 +849,7 @@ std::vector<Move> Board::legalMoveGeneration() {
             checkingPieceType = whiteToMove? 7 : 1;
         }
 
-        enemyKnights &= enemyKnights - 1;
+        enemyKnightsCopy &= enemyKnightsCopy - 1;
     }
 
     // Checking bishop/queen (diagonal) attacks
@@ -877,7 +887,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     // Checking king attacks
     kingDangerSquares |= generateKingAttacks(__builtin_ctzll(enemyKing));
 
-    // Check if there's a double check
+    //Check if there's a double check
     // if (kingAttacks >= 2) {
     //     std::cout << "Double check!\n";
     // } else if (kingAttacks == 1) {
@@ -1209,20 +1219,30 @@ std::vector<Move> Board::legalMoveGeneration() {
     }
 
 
-    // std:: cout << "xrayBitboard\n";
-    // std::bitset<64> xray(xrayBitboard);
-    // for (int i = 0; i < 64; i++) {
-    //     std::cout << xray[i];
-    //     if ((i + 1) % 8 == 0) {
-    //         std::cout << std::endl;
-    //     }
-    // }
+    std:: cout << "xrayBitboard\n";
+    std::bitset<64> xray(xrayBitboard);
+    for (int i = 0; i < 64; i++) {
+        std::cout << xray[i];
+        if ((i + 1) % 8 == 0) {
+            std::cout << std::endl;
+        }
+    }
 
     // ******************************************************************************
     // now we can generate all pseudo legal moves and take into account the !(fromSquare && xrayBitBoard)
     // ******************************************************************************
 
     uint64_t opponentPieces = enemyPawns | enemyKnights | enemyBishopsQueens | enemyRooksQueens | enemyKing;
+
+
+    //     std:: cout << "ORIGINAL opponent pieces\n";
+    //     std::bitset<64> sq3(opponentPieces);
+    //     for (int i = 0; i < 64; i++) {
+    //         std::cout << sq3[i];
+    //         if ((i + 1) % 8 == 0) {
+    //             std::cout << std::endl;
+    //         }
+    //     }
 
     uint64_t rooks = bitboards[playerPieceType + 3];
     uint64_t bishops = bitboards[playerPieceType + 2];
@@ -1232,7 +1252,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     uint64_t playerPawnsMask = pawns;
     while (playerPawnsMask) {
         int fromSquare = __builtin_ctzll(playerPawnsMask);
-        if(((xrayBitboard & (1ULL << fromSquare)) == 1)) {
+        if(((xrayBitboard & (1ULL << fromSquare)))) {
             playerPawnsMask &= playerPawnsMask - 1;
             continue; // if the pawn is pinned, we can't move it
         }
@@ -1313,7 +1333,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     uint64_t playerKnightsMask = knights;
     while (playerKnightsMask) {
         int fromSquare = __builtin_ctzll(playerKnightsMask);
-        if(((xrayBitboard & (1ULL << fromSquare)) == 1)) {
+        if(((xrayBitboard & (1ULL << fromSquare)))) {
             playerKnightsMask &= playerKnightsMask - 1;
             continue; // if the knight is pinned, we can't move it
         }
@@ -1343,7 +1363,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     uint64_t playerBishopsMask = bishops;
     while (playerBishopsMask) {
         int fromSquare = __builtin_ctzll(playerBishopsMask);
-        if(((xrayBitboard & (1ULL << fromSquare)) == 1)) {
+        if(((xrayBitboard & (1ULL << fromSquare)))) {
             playerBishopsMask &= playerBishopsMask - 1;
             continue; // if the bishop is pinned, we can't move it
         }
@@ -1376,7 +1396,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     uint64_t playerRooksMask = rooks;
     while (playerRooksMask) {
         int fromSquare = __builtin_ctzll(playerRooksMask);
-        if(((xrayBitboard & (1ULL << fromSquare)) == 1)) {
+        if(((xrayBitboard & (1ULL << fromSquare)))) {
             playerRooksMask &= playerRooksMask - 1;
             continue; // if the rook is pinned, we can't move it
         }
@@ -1408,7 +1428,7 @@ std::vector<Move> Board::legalMoveGeneration() {
     uint64_t playerQueensMask = queens;
     while (playerQueensMask) {
         int fromSquare = __builtin_ctzll(playerQueensMask);
-        if(((xrayBitboard & (1ULL << fromSquare)) == 1)) {
+        if(((xrayBitboard & (1ULL << fromSquare)))) {
             playerQueensMask &= playerQueensMask - 1;
             continue; // if the queen is pinned, we can't move it
         }
@@ -1442,13 +1462,14 @@ std::vector<Move> Board::legalMoveGeneration() {
     while (playerKingMask) {
         int fromSquare = __builtin_ctzll(playerKingMask);
         uint64_t kingAttacks = generateKingAttacks(fromSquare);
-        
+
         while (kingAttacks) {
             int toSquare = __builtin_ctzll(kingAttacks);
             uint64_t destinationMask = (1ULL << toSquare);
 
-            if (opponentPieces & destinationMask) {
+            if ((opponentPieces & destinationMask) && !(kingDangerSquares & destinationMask)) {
                 // Capture move
+                
                 legalMoves.push_back(Move(fromSquare, toSquare, playerPieceType + 5, pieceTypeAtSquare(toSquare), -1, -1, 
                                     Move::MoveType::Capture, whiteKingSideCastling, whiteQueenSideCastling, 
                                     blackKingSideCastling, blackQueenSideCastling));
@@ -1458,10 +1479,8 @@ std::vector<Move> Board::legalMoveGeneration() {
                                     Move::MoveType::Normal, whiteKingSideCastling, whiteQueenSideCastling, 
                                     blackKingSideCastling, blackQueenSideCastling));
             }
-
             kingAttacks &= kingAttacks - 1;
         }
-
         playerKingMask &= playerKingMask - 1;
     }
 
