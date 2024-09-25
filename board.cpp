@@ -1219,14 +1219,14 @@ std::vector<Move> Board::legalMoveGeneration() {
     }
 
 
-    std:: cout << "xrayBitboard\n";
-    std::bitset<64> xray(xrayBitboard);
-    for (int i = 0; i < 64; i++) {
-        std::cout << xray[i];
-        if ((i + 1) % 8 == 0) {
-            std::cout << std::endl;
-        }
-    }
+    // std:: cout << "xrayBitboard\n";
+    // std::bitset<64> xray(xrayBitboard);
+    // for (int i = 0; i < 64; i++) {
+    //     std::cout << xray[i];
+    //     if ((i + 1) % 8 == 0) {
+    //         std::cout << std::endl;
+    //     }
+    // }
 
     // ******************************************************************************
     // now we can generate all pseudo legal moves and take into account the !(fromSquare && xrayBitBoard)
@@ -1787,6 +1787,16 @@ std::vector<Move> Board::pseudoLegalMoves() {
             }
         }
     }
+    for (int i = moves.size() - 1; i >= 0; i--) {
+        makeMove(moves[i]);
+        if (isKingInCheck()) {
+            undoMove(moves[i]);  // Undo the move before erasing
+            moves.erase(moves.begin() + i);
+        } else {
+            undoMove(moves[i]);  // Only undo if the move is valid
+        }
+    }
+
 
     return moves;
 }

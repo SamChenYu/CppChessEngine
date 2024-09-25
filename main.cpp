@@ -25,6 +25,7 @@ int secondBestMoveIndex = -1;
 int thirdBestMoveIndex = -1;
 int threadNum = 4;
 
+
 void unitTest() {
 
     // Testing makeMoves()
@@ -347,7 +348,7 @@ void unitTest() {
 
 }
 
-double minimax(Board& board, int depth, double alpha, double beta, bool isMaximising) {
+double minimax(Board board, int depth, double alpha, double beta, bool isMaximising) {
 
 
     nodesSearched++;
@@ -356,6 +357,7 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
     }
 
     vector<Move> moves = board.legalMoveGeneration();
+
     // checking if a leaf is a terminal node
     if(moves.empty()) { 
         int terminate = board.isGameOver();
@@ -365,6 +367,10 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
             }
         }
     }
+    //std::cout << "---------------" << std::endl;
+    //moves[0].toString();
+    //std:: cout << "--------------" << std::endl;
+
 
     if (depth == 0) {
         // Use multi-threading at the root level
@@ -468,8 +474,6 @@ double minimax(Board& board, int depth, double alpha, double beta, bool isMaximi
         return leastValue;
     }
 }
-
-
 
 int main() {
     Board board;

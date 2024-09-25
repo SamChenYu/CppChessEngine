@@ -49,8 +49,8 @@ double evaluate(Board& board) {
         materialWeight = 0.3;
         positionWeight = 0.7;
     } else {
-        materialWeight = 0.9;
-        positionWeight = 0.1;
+        materialWeight = 0.1;
+        positionWeight = 0.9;
     }
 
 

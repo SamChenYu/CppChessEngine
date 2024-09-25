@@ -86,7 +86,7 @@ private:
     int enPassantSquare;
     int halfmoveClock;
     int fullmoveNumber;
-    bool whiteToMove;
+    volatile bool whiteToMove;
     
     
 };
