@@ -22,6 +22,21 @@ class Move {
     // Move constructor:
     // Move(fromSquare, toSquare, pieceType, capturedPiece, enPassantSquare, promotedPieceType, moveType, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling)
 
+
+    Move() {
+        fromSquare = -1;
+        toSquare = -1;
+        pieceType = -1;
+        moveType = MoveType::Normal;
+        capturedPieceType = -1;
+        enPassantSquare = -1;
+        promotedPieceType = -1;
+        whiteKingSideCastling = false;
+        whiteQueenSideCastling = false;
+        blackKingSideCastling = false;
+        blackQueenSideCastling = false;
+    }
+
     Move(int fromSquare, int toSquare, int pieceType, int capturedPieceType = -1, int enPassantSquare = -1, int promotedPieceType = -1,
          MoveType moveType = MoveType::Normal, bool whiteKingSideCastling = false, bool whiteQueenSideCastling = false, 
          bool blackKingSideCastling = false, bool blackQueenSideCastling = false):

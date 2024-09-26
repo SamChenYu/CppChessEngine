@@ -29,6 +29,8 @@ int thirdBestMoveIndex = -1;
 double thirdBestEval = -1;
 int threadNum = 4;
 
+vector<Move> principalVector; // stores the top variation of the search
+
 
 void unitTest() {
 
@@ -356,34 +358,28 @@ void unitTest() {
 double minimax(Board board, int depth, double alpha, double beta, bool isMaximising) {
     nodesSearched++;
 
+    if(depth == maxDepth) {
+        return evaluate(board);
+    }
+
     vector<Move> moves = board.legalMoveGeneration();
 
-    if(depth == maxDepth || moves.empty()) {
-
-    if (moves.empty()) {
+    if( moves.empty()) {
         int terminate = board.isGameOver();
 
         // Checkmate or stalemate scenarios
-        if (terminate != 2) {
+
             if (terminate == 1) {  // White wins by checkmate
                 return 10.0 - (depth * 0.01);  // Favor quicker checkmates
             } else if (terminate == -1) {  // Black wins by checkmate
                 return -10.0 + (depth * 0.01);  // Favor quicker checkmates
-            } else if (terminate == 0) {  // Stalemate
-                return 0.0;  // Stalemate is a draw
-            }
-        }
-        return 0.0;
+            }            
+
+        // Stalemate
+        return 0.0;  // Stalemate is a draw
     }
 
-
-        return evaluate(board);
-    }
-
-    if (depth == 0) {
-        // Use multi-threading at the root level
-        //return parallelMinimax(board, depth, alpha, beta, isMaximising);
-    }
+    Move bestMove;
 
     // minimax
     if (isMaximising) {
@@ -410,6 +406,7 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                 // secondBestValue = bestValue;
                 // secondBestEval = bestValue;
                 bestValue = tempValue;
+                bestMove = moves[i];
 
 
                 if (depth == 0) {
@@ -445,6 +442,11 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
             if (beta <= alpha) {
                 break;
             }
+
+            if (depth < maxDepth) {
+                principalVector[depth] = bestMove;
+            }
+
         }
         return bestValue;
     } else {
@@ -463,6 +465,7 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                 // thirdLeastValue = secondLeastValue;
                 // secondLeastValue = leastValue;
                 leastValue = tempValue;
+                bestMove = moves[i];
                 if (depth == 0) {
                     //thirdBestMoveIndex = secondBestMoveIndex;
                     //secondBestMoveIndex = bestMoveIndex;
@@ -491,13 +494,25 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
             if (beta <= alpha) {
                 break;
             }
+
+            if (depth < maxDepth) {
+                principalVector[depth] = bestMove;
+            }
+
         }
         return leastValue;
     }
 }
 
 
-
+void printPrincipalVariation() {
+    cout << "Principal Variation: " << endl;
+    for (int depth = 0; depth < maxDepth; depth++) {
+            cout << principalVector[depth].toString() << " " << endl;  // Print the best move at each depth
+        
+    }
+    cout << endl;
+}
 
 int main() {
     Board board;
@@ -507,6 +522,7 @@ int main() {
     getline(cin, fen); // input from terminal
     cout << "Enter Max Depth: \n";
     cin >> maxDepth;
+    principalVector.resize(maxDepth);
     if(fen.empty()) {
         fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";   
     }
@@ -550,6 +566,8 @@ int main() {
             //cout << moves[thirdBestMoveIndex].toString() << " " << thirdBestEval << endl;
             cout << "------------------" << endl;
         }
+
+        printPrincipalVariation();
         //unitTest();
     } else {
         vector<Move> moves = board.legalMoveGeneration();
