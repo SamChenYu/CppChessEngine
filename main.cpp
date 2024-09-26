@@ -443,9 +443,8 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                 break;
             }
 
-            if (depth < maxDepth) {
-                principalVector[depth] = bestMove;
-            }
+            principalVector[depth] = bestMove;
+        
 
         }
         return bestValue;
@@ -495,9 +494,8 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                 break;
             }
 
-            if (depth < maxDepth) {
-                principalVector[depth] = bestMove;
-            }
+            principalVector[depth] = bestMove;
+        
 
         }
         return leastValue;
