@@ -307,12 +307,16 @@ void Board::makeMove(const Move& move) {
         case Move::MoveType::CastleKingSide:
             //std:: cout << "Castle King Side Executing\n";
             if (pieceType == 5) { // checks whether the piece is white king
-                movePiece(5, fromSquare, toSquare); // move the white king
+                bitboards[5] = 0;
+                bitboards[5] = ( 1ULL << toSquare);
+                //movePiece(5, fromSquare, toSquare); // move the white king
                 movePiece(3, 63, 61); // move the white rook
                 whiteKingSideCastling = false;
                 whiteQueenSideCastling = false;
             } else {
-                movePiece(11, fromSquare, toSquare); // move the black king
+                bitboards[11] = 0;
+                bitboards[11] = (1ULL << toSquare);
+                //movePiece(11, fromSquare, toSquare); // move the black king
                 movePiece(9, 7, 5); // move the black rook
                 blackKingSideCastling = false;
                 blackQueenSideCastling = false;
@@ -322,12 +326,16 @@ void Board::makeMove(const Move& move) {
         case Move::MoveType::CastleQueenSide:
             //std:: cout << "Castle Queen Side Executing\n";
             if (pieceType == 5) { // checks whether the piece is white king
-                movePiece(5, fromSquare, toSquare); // move the white king
+                bitboards[5] = 0;
+                bitboards[5] = (1ULL << toSquare);
+                //movePiece(5, fromSquare, toSquare); // move the white king
                 movePiece(3, 56, 59); // move the white rook
                 whiteKingSideCastling = false;
                 whiteQueenSideCastling = false;
             } else {
-                movePiece(11, fromSquare, toSquare); // move the black king
+                bitboards[11] = 0;
+                bitboards[11] = (1ULL << toSquare);
+                //movePiece(11, fromSquare, toSquare); // move the black king
                 movePiece(9, 0, 3); // move the black rook
                 blackKingSideCastling = false;
                 blackQueenSideCastling = false;
@@ -945,13 +953,39 @@ std::vector<Move> Board::legalMoveGeneration() {
         // Find all captures that can be made at square kingAttackedAtSquare
         // ******************************************************************************
 
+
+
+        // FOLLOWING CODE IS FOR EDGE CASE --> A PIECE CAN BLOCK THE CHECK BUT IS PINNED BY ANOTHER PIECE
+        // SO the x ray bitboard from below has to be copied
+        uint64_t xrayBitboard = 0ULL; // get attack rays from all sliding pieces - will ignore one friendly piece
+            blockers |= king; // add the king to the blockers so that we can get the xray bitboard  
+            // Checking bishop/queen (diagonal) attacks
+            enemyBishopsQueensCopy = enemyBishopsQueens;
+            while (enemyBishopsQueensCopy) {
+                int square = __builtin_ctzll(enemyBishopsQueensCopy);
+                xrayBitboard |= generateBishopXRay(square, kingSquare, blockers);
+                enemyBishopsQueensCopy &= enemyBishopsQueensCopy - 1;
+            }
+
+            // Checking rook/queen (horizontal/vertical) attacks
+            rookAttacks = 0;
+            enemyRooksQueensCopy = enemyRooksQueens;
+            while (enemyRooksQueensCopy) {
+                int square = __builtin_ctzll(enemyRooksQueensCopy);
+                xrayBitboard |= generateRookXRay(square, kingSquare, blockers);
+                enemyRooksQueensCopy &= enemyRooksQueensCopy - 1;
+            }
+
+
+
+
         // Pawns
         uint64_t leftPawnCaptures = (whiteToMove) ? ((pawns >> 9) & ~FILE_A) : ((pawns << 7) & ~FILE_H);
         uint64_t rightPawnCaptures = (whiteToMove) ? ((pawns >> 7) & ~FILE_H) : ((pawns << 9) & ~FILE_A);
         int pieceType = whiteToMove? 0 : 6;
         bool isPromotingRank = (whiteToMove && kingAttackedAtSquare / 8 == 0) || (!whiteToMove && kingAttackedAtSquare / 8 == 7);
 
-        if (leftPawnCaptures & (1ULL << kingAttackedAtSquare)) {
+        if (leftPawnCaptures & (1ULL << kingAttackedAtSquare) && !(xrayBitboard & (1ULL << kingAttackedAtSquare))) {
 
             int fromSquare = whiteToMove ? kingAttackedAtSquare + 9 : kingAttackedAtSquare - 7;
 
@@ -974,7 +1008,7 @@ std::vector<Move> Board::legalMoveGeneration() {
         }
 
 
-        if (rightPawnCaptures & (1ULL << kingAttackedAtSquare)) {
+        if (rightPawnCaptures & (1ULL << kingAttackedAtSquare) && !(xrayBitboard & (1ULL << kingAttackedAtSquare))) {
 
             int fromSquare = whiteToMove ? kingAttackedAtSquare + 7 : kingAttackedAtSquare - 9;
 
@@ -1000,6 +1034,12 @@ std::vector<Move> Board::legalMoveGeneration() {
         uint64_t knightCopy = knights; // create the copy so we can reuse it later
         while (knightCopy) {
             int square = __builtin_ctzll(knightCopy);
+
+            if(((xrayBitboard & (1ULL << square)))) {
+                knightCopy &= knightCopy - 1;
+                continue; // if the knight is pinned, we can't move it
+            }
+            
             uint64_t knightMoves = generateKnightAttacks(square);
             if (knightMoves & (1ULL << kingAttackedAtSquare)) {
                 //std::cout << "Knight capture at  " << square << " to " << kingAttackedAtSquare << std::endl;
@@ -1013,6 +1053,12 @@ std::vector<Move> Board::legalMoveGeneration() {
         uint64_t bishopQueensCopy = bishopQueens; // create the copy so we can reuse it later
         while (bishopQueensCopy) {
             int square = __builtin_ctzll(bishopQueensCopy);
+
+            if(((xrayBitboard & (1ULL << square)))) {
+                bishopQueensCopy &= bishopQueensCopy - 1;
+                continue; // if the bishop is pinned we can't move it
+            }
+
             uint64_t bishopMoves = generateBishopAttacks(square, blockers);
             if (bishopMoves & (1ULL << kingAttackedAtSquare)) {
                 //std::cout << "Bishop capture at  " << square << " to " << kingAttackedAtSquare << std::endl;
@@ -1027,6 +1073,11 @@ std::vector<Move> Board::legalMoveGeneration() {
         uint64_t rookQueensCopy = rookQueens; // create the copy so we can reuse it later
         while (rookQueensCopy) {
             int square = __builtin_ctzll(rookQueensCopy);
+
+            if((xrayBitboard & (1ULL << square))) {
+                rookQueensCopy &= rookQueensCopy - 1;
+                continue; // if the rook is pinned we can't move it
+            }
             uint64_t rookMoves = generateRookAttacks(square, blockers);
             if (rookMoves & (1ULL << kingAttackedAtSquare)) {
                 //std::cout << "Rook capture at  " << square << " to " << kingAttackedAtSquare << std::endl;
@@ -1100,6 +1151,12 @@ std::vector<Move> Board::legalMoveGeneration() {
     if (whiteToMove) {
         while (blockingMaskCopy) {
             int square = __builtin_ctzll(blockingMaskCopy);  // Get the least significant bit set
+
+            if(((xrayBitboard & (1ULL << square)))) {
+                blockingMaskCopy &= blockingMaskCopy - 1;
+                continue; // if the pawn is pinned we can't move it
+            }
+
             // Check if a white pawn can move 1 square forward
             if ((square >= 8) && ((1ULL << (square + 8)) & pawnsCopy)) {
                 // Ensure the square is within bounds and the destination is occupied by a pawn
@@ -1122,6 +1179,12 @@ std::vector<Move> Board::legalMoveGeneration() {
         else {
             while (blockingMaskCopy) {
                 int square = __builtin_ctzll(blockingMaskCopy);  // Get the least significant bit set
+
+            if(((xrayBitboard & (1ULL << square)))) {
+                blockingMaskCopy &= blockingMaskCopy - 1;
+                continue; // if the pawn is pinned we can't move it
+            }
+
 
                 // Check if a black pawn can move 1 square forward
                 if ((square < 56) && ((1ULL << (square - 8)) & pawnsCopy)) {
@@ -1146,6 +1209,10 @@ std::vector<Move> Board::legalMoveGeneration() {
         knightCopy = knights;
         while(knightCopy) {
             int square = __builtin_ctzll(knightCopy);
+            if(((xrayBitboard & (1ULL << square)))) {
+                knightCopy &= knightCopy - 1;
+                continue; // if the knight is pinned we can't move it
+            }
             uint64_t knightMoves = generateKnightAttacks(square);
             if(knightMoves & blockingMask) {
                 //std::cout << "Knight can move from " << square << " to " << __builtin_ctzll(blockingMask&knightMoves)  << std::endl;
@@ -1158,6 +1225,10 @@ std::vector<Move> Board::legalMoveGeneration() {
         bishopQueensCopy = bishopQueens;
         while(bishopQueensCopy) {
             int square = __builtin_ctzll(bishopQueensCopy);
+            if(((xrayBitboard & (1ULL << square)))) {
+                bishopQueensCopy &= bishopQueensCopy - 1;
+                continue; // if the bishop is pinned we can't move it
+            }
             uint64_t bishopMoves = generateBishopAttacks(square, blockers);
             if(bishopMoves & blockingMask) {
                 //std::cout << "Bishop can move from " << square << " to " << __builtin_ctzll(blockingMask&bishopMoves) << std::endl;
@@ -1170,6 +1241,11 @@ std::vector<Move> Board::legalMoveGeneration() {
         rookQueensCopy = rookQueens;
         while(rookQueensCopy) {
             int square = __builtin_ctzll(rookQueensCopy);
+
+            if(((xrayBitboard & (1ULL << square)))) {
+                rookQueensCopy &= rookQueensCopy - 1;
+                continue; // if the rook is pinned we can't move it
+            }
             uint64_t rookMoves = generateRookAttacks(square, blockers);
             if(rookMoves & blockingMask) {
                 //std::cout << "Rook can move from " << square << " to " << __builtin_ctzll(blockingMask&rookMoves) << std::endl;
@@ -1199,6 +1275,7 @@ std::vector<Move> Board::legalMoveGeneration() {
         On a non-diagonal ray: rooks, queens, and pawns (pushes only).
     */
    // ******************************************************************************
+
    uint64_t xrayBitboard = 0ULL; // get attack rays from all sliding pieces - will ignore one friendly piece
     blockers |= king; // add the king to the blockers so that we can get the xray bitboard  
     // Checking bishop/queen (diagonal) attacks
@@ -1248,7 +1325,61 @@ std::vector<Move> Board::legalMoveGeneration() {
     uint64_t bishops = bitboards[playerPieceType + 2];
     uint64_t queens = bitboards[playerPieceType + 4];
 
-        // Generate pawn moves
+
+
+    // Generate king moves
+    uint64_t playerKingMask = king;
+    while (playerKingMask) {
+        int fromSquare = __builtin_ctzll(playerKingMask);
+        uint64_t kingAttacks = generateKingAttacks(fromSquare);
+
+        while (kingAttacks) {
+            int toSquare = __builtin_ctzll(kingAttacks);
+            uint64_t destinationMask = (1ULL << toSquare);
+
+            if ((opponentPieces & destinationMask) && !(kingDangerSquares & destinationMask)) {
+                // Capture move
+                
+                legalMoves.push_back(Move(fromSquare, toSquare, playerPieceType + 5, pieceTypeAtSquare(toSquare), -1, -1, 
+                                    Move::MoveType::Capture, whiteKingSideCastling, whiteQueenSideCastling, 
+                                    blackKingSideCastling, blackQueenSideCastling));
+            } else if (!(blockers & destinationMask)) {
+                // Normal move (not blocked)
+                legalMoves.push_back(Move(fromSquare, toSquare, playerPieceType + 5, -1, -1, -1, 
+                                    Move::MoveType::Normal, whiteKingSideCastling, whiteQueenSideCastling, 
+                                    blackKingSideCastling, blackQueenSideCastling));
+            }
+            kingAttacks &= kingAttacks - 1;
+        }
+        playerKingMask &= playerKingMask - 1;
+    }
+
+    // Generate castling moves
+    if(whiteToMove) {
+        if(whiteKingSideCastling) {
+            if(!(blockers & (1ULL << 61)) && !(blockers & (1ULL << 62)) && !isKingInCheck()) {
+                legalMoves.push_back(Move(60, 62, 5, -1, -1, -1, Move::MoveType::CastleKingSide, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+            }
+        }
+        if(whiteQueenSideCastling) {
+            if(!(blockers & (1ULL << 57)) && !(blockers & (1ULL << 58)) && !isKingInCheck()) {
+                legalMoves.push_back(Move(60, 58, 5, -1, -1, -1, Move::MoveType::CastleQueenSide, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+            }
+        }
+    } else {
+        if(blackKingSideCastling) {
+            if(!(blockers & (1ULL << 5)) && !(blockers & (1ULL << 6)) && !isKingInCheck()) {
+                legalMoves.push_back(Move(4, 6, 11, -1, -1, -1, Move::MoveType::CastleKingSide, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+            }
+        }
+        if(blackQueenSideCastling) {
+            if(!(blockers & (1ULL << 1)) && !(blockers & (1ULL << 2)) && !isKingInCheck()) {
+                legalMoves.push_back(Move(4, 2, 11, -1, -1, -1, Move::MoveType::CastleQueenSide, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
+            }
+        }
+    }
+
+    // Generate pawn moves
     uint64_t playerPawnsMask = pawns;
     while (playerPawnsMask) {
         int fromSquare = __builtin_ctzll(playerPawnsMask);
@@ -1454,59 +1585,6 @@ std::vector<Move> Board::legalMoveGeneration() {
         }
         
         playerQueensMask &= playerQueensMask - 1;
-    }
-
-
-    // Generate king moves
-    uint64_t playerKingMask = king;
-    while (playerKingMask) {
-        int fromSquare = __builtin_ctzll(playerKingMask);
-        uint64_t kingAttacks = generateKingAttacks(fromSquare);
-
-        while (kingAttacks) {
-            int toSquare = __builtin_ctzll(kingAttacks);
-            uint64_t destinationMask = (1ULL << toSquare);
-
-            if ((opponentPieces & destinationMask) && !(kingDangerSquares & destinationMask)) {
-                // Capture move
-                
-                legalMoves.push_back(Move(fromSquare, toSquare, playerPieceType + 5, pieceTypeAtSquare(toSquare), -1, -1, 
-                                    Move::MoveType::Capture, whiteKingSideCastling, whiteQueenSideCastling, 
-                                    blackKingSideCastling, blackQueenSideCastling));
-            } else if (!(blockers & destinationMask)) {
-                // Normal move (not blocked)
-                legalMoves.push_back(Move(fromSquare, toSquare, playerPieceType + 5, -1, -1, -1, 
-                                    Move::MoveType::Normal, whiteKingSideCastling, whiteQueenSideCastling, 
-                                    blackKingSideCastling, blackQueenSideCastling));
-            }
-            kingAttacks &= kingAttacks - 1;
-        }
-        playerKingMask &= playerKingMask - 1;
-    }
-
-    // Generate castling moves
-    if(whiteToMove) {
-        if(whiteKingSideCastling) {
-            if(!(blockers & (1ULL << 61)) && !(blockers & (1ULL << 62)) && !isKingInCheck()) {
-                legalMoves.push_back(Move(60, 62, 5, -1, -1, -1, Move::MoveType::CastleKingSide, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
-            }
-        }
-        if(whiteQueenSideCastling) {
-            if(!(blockers & (1ULL << 57)) && !(blockers & (1ULL << 58)) && !isKingInCheck()) {
-                legalMoves.push_back(Move(60, 58, 5, -1, -1, -1, Move::MoveType::CastleQueenSide, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
-            }
-        }
-    } else {
-        if(blackKingSideCastling) {
-            if(!(blockers & (1ULL << 5)) && !(blockers & (1ULL << 6)) && !isKingInCheck()) {
-                legalMoves.push_back(Move(4, 6, 11, -1, -1, -1, Move::MoveType::CastleKingSide, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
-            }
-        }
-        if(blackQueenSideCastling) {
-            if(!(blockers & (1ULL << 1)) && !(blockers & (1ULL << 2)) && !isKingInCheck()) {
-                legalMoves.push_back(Move(4, 2, 11, -1, -1, -1, Move::MoveType::CastleQueenSide, whiteKingSideCastling, whiteQueenSideCastling, blackKingSideCastling, blackQueenSideCastling));
-            }
-        }
     }
 
     // ******************************************************************************

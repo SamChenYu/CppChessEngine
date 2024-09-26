@@ -35,7 +35,7 @@ class Move {
 
     void display() const;
 
-    void toString() const;
+    std::string toString() const;
 
     std::string bitboardIndexToCoordinate(int index) const;
 

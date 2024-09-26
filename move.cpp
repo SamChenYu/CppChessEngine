@@ -36,22 +36,26 @@ void Move::display() const {
 }
 
 // for displaying to user
-void Move::toString() const {
+std::string Move::toString() const {
     string pieces[] = {
-        "White Pawn", "White Knight","White Bishop", "White Rook", "White Queen", "White King",
+        "White Pawn", "White Knight", "White Bishop", "White Rook", "White Queen", "White King",
         "Black Pawn", "Black Knight", "Black Bishop", "Black Rook", "Black Queen", "Black King"
     };
 
-    cout << pieces[pieceType] << " moves from Square: " << bitboardIndexToCoordinate(fromSquare) << " to Square: " << bitboardIndexToCoordinate(toSquare) << " (" << moveTypeToString() << ")";
-    if(moveType == MoveType::Capture || moveType == MoveType::PromoteCapture) {
-        cout << " and captures " << pieces[capturedPieceType];
-    }
-    if(moveType == MoveType::Promote || moveType == MoveType::PromoteCapture) {
-        cout << " and promotes to " << pieces[promotedPieceType];
+    string result = pieces[pieceType] + " moves from Square: " + bitboardIndexToCoordinate(fromSquare) +
+                    " to Square: " + bitboardIndexToCoordinate(toSquare) + " (" + moveTypeToString() + ")";
+
+    if (moveType == MoveType::Capture || moveType == MoveType::PromoteCapture) {
+        result += " and captures " + pieces[capturedPieceType];
     }
 
-     cout << endl;
+    if (moveType == MoveType::Promote || moveType == MoveType::PromoteCapture) {
+        result += " and promotes to " + pieces[promotedPieceType];
+    }
+
+    return result;
 }
+
 
 
 std::string Move::bitboardIndexToCoordinate(int index) const {
