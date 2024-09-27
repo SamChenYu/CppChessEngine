@@ -60,6 +60,7 @@ std::string Move::toString() const {
 
 std::string Move::bitboardIndexToCoordinate(int index) const {
     if (index < 0 || index >= 64) {
+        std::cout<< "Index: " << index << std::endl;    
         throw std::out_of_range("Index must be between 0 and 63.");
     }
 

@@ -31,7 +31,6 @@ int threadNum = 4;
 
 vector<Move> principalVector; // stores the top variation of the search
 
-
 void unitTest() {
 
     // Testing makeMoves()
@@ -355,7 +354,7 @@ void unitTest() {
 }
 
 
-double minimax(Board board, int depth, double alpha, double beta, bool isMaximising) {
+double minimax(Board board, int depth, double alpha, double beta, bool isMaximising, vector<Move>& currentLine ) {
     nodesSearched++;
 
     if(depth == maxDepth) {
@@ -379,7 +378,6 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
         return 0.0;  // Stalemate is a draw
     }
 
-    Move bestMove;
 
     // minimax
     if (isMaximising) {
@@ -387,17 +385,17 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
         double secondBestValue = -std::numeric_limits<double>::infinity() + 1.0;
         double thirdBestValue = -std::numeric_limits<double>::infinity() + 2.0;
 
+        vector<Move> bestLineAtThisDepth;
+
         for (int i = 0; i < moves.size(); i++) {
             board.makeMove(moves[i]);
             board.flipColour();
-
-                // cout << "Move: " << moves[i].toString() << evaluate(board) << " depth: " << depth << endl;
-                // board.printJustFENBoard();
-
-            double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising);
+            currentLine.push_back(moves[i]);
+            vector<Move> newLine;
+            double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising, newLine);
             board.flipColour();
             board.undoMove(moves[i]);
-
+            
 
 
             if (tempValue >= bestValue) {
@@ -406,8 +404,9 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                 // secondBestValue = bestValue;
                 // secondBestEval = bestValue;
                 bestValue = tempValue;
-                bestMove = moves[i];
 
+                bestLineAtThisDepth = currentLine;  // Store the current best move
+                bestLineAtThisDepth.insert(bestLineAtThisDepth.end(), newLine.begin(), newLine.end());  // Append deeper moves
 
                 if (depth == 0) {
                     // thirdBestMoveIndex = secondBestMoveIndex;
@@ -415,6 +414,7 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                     // secondBestMoveIndex = bestMoveIndex;
                     bestMoveIndex = i;
                     bestMoveEval = bestValue;
+                    principalVector = bestLineAtThisDepth;
                 }
             } /*else if (tempValue >= secondBestValue) {
                 thirdBestValue = secondBestValue;
@@ -437,39 +437,53 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
             */
 
             alpha = std::max(alpha, bestValue);
-
+            currentLine.pop_back();
             // Pruning
             if (beta <= alpha) {
                 break;
             }
 
-            principalVector[depth] = bestMove;
+            
         
 
         }
+        currentLine = bestLineAtThisDepth;
         return bestValue;
     } else {
         double leastValue = std::numeric_limits<double>::infinity();
         double secondLeastValue = std::numeric_limits<double>::infinity() - 1.0;
         double thirdLeastValue = std::numeric_limits<double>::infinity() - 2.0;
 
+        vector<Move> bestLineAtThisDepth;
+
         for (int i = 0; i < moves.size(); i++) {
             board.makeMove(moves[i]);
+            currentLine.push_back(moves[i]);
             board.flipColour();
-            double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising);
+
+            vector<Move> newLine;
+            double tempValue = minimax(board, depth + 1, alpha, beta, !isMaximising, newLine);
             board.flipColour();
             board.undoMove(moves[i]);
+
 
             if (tempValue <= leastValue) {
                 // thirdLeastValue = secondLeastValue;
                 // secondLeastValue = leastValue;
                 leastValue = tempValue;
-                bestMove = moves[i];
+
+                                // Update the best line at this depth
+                bestLineAtThisDepth = currentLine;  // Store the current best move
+                bestLineAtThisDepth.insert(bestLineAtThisDepth.end(), newLine.begin(), newLine.end());  // Append deeper moves
+
+
+                
                 if (depth == 0) {
                     //thirdBestMoveIndex = secondBestMoveIndex;
                     //secondBestMoveIndex = bestMoveIndex;
                     bestMoveIndex = i;
                     bestMoveEval = leastValue;
+                    principalVector = bestLineAtThisDepth;
                 }
             } /*else if (tempValue <= secondLeastValue) {
                 thirdLeastValue = secondLeastValue;
@@ -486,7 +500,7 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                     thirdBestMoveIndex = i;
                 }
             } */
-
+            currentLine.pop_back();
             beta = std::min(beta, leastValue);
 
             // Pruning
@@ -494,10 +508,11 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                 break;
             }
 
-            principalVector[depth] = bestMove;
+            
         
 
         }
+        currentLine = bestLineAtThisDepth;
         return leastValue;
     }
 }
@@ -540,12 +555,12 @@ int main() {
             //moves[i].display();
         }
 
-
+        vector<Move> currentLine;
         auto start = std::chrono::high_resolution_clock::now();
         if(board.isWhiteToMove()) {
-                minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), true);
+                minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), true, currentLine);
         } else {
-                minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), false);
+                minimax(board, 0, -std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(), false, currentLine);
         }
         
         auto end = std::chrono::high_resolution_clock::now();
