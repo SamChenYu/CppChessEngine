@@ -1,5 +1,6 @@
 # C++ Chess Engine
 Utilising Minimax Algorithim with Alpha-Beta Pruning, Multi-Threading and Precomputed-Tables
+~Roughly 1.5 million nodes per second for evaluation and move generation
 
 ## Board Representation: 12 Bitboards (Big Endian)
 <img width="400" alt="16 17 19 19 20 21 22 23" src="https://github.com/user-attachments/assets/7f730726-ab3c-40e6-a5d7-85deac51db99">
