@@ -472,7 +472,7 @@ double minimax(Board board, int depth, double alpha, double beta, bool isMaximis
                 // secondLeastValue = leastValue;
                 leastValue = tempValue;
 
-                                // Update the best line at this depth
+                // Update the best line at this depth
                 bestLineAtThisDepth = currentLine;  // Store the current best move
                 bestLineAtThisDepth.insert(bestLineAtThisDepth.end(), newLine.begin(), newLine.end());  // Append deeper moves
 

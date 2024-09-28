@@ -1,0 +1,11 @@
+27/09/24
+Improved Move Ordering
+Starting Pos:
+Depth 6: 2,081,256 in 3.83 seconds (543,000 NPS)
+Depth 7: 19,669,067 in 35.45 seconds
+Depth 8: 110,814,416 in 233.47 seconds
+
+
+Before Move Ordering
+Depth 9: 1,496,188,154 in 2006.35 seconds (745,000 NPS)
+
